@@ -1,0 +1,197 @@
+---
+title: "prioritylasso Vignette"
+author: "Simon Klau"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{prioritylasso Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Introduction
+prioritylasso was developed for situations in which different types of high dimensional omics-data in combination with clinical data are available. We want to include these so called blocks of data together in a prediction model. prioritylasso thereby tries to find a good compromise between prediction accuracy and practical aspects. This is done by letting the practitioner include prior knowledge in the form of priorities, which define the importance of every block. The priorities can be chosen in several different ways.  
+The model is successively calculated as LASSO-based, while the Linear Predictor after each fit is taken as an Offset in the LASSO Regression of the block with the next lowest priority. The Penalized Regression models are computed via the R package ```glmnet```. Moreover, the R package ```survival``` is used when the outcome consists of survival data. In addition to the main function, the package ```prioritylasso``` contains an extension of the standard function named cvm_prioritylasso. It is also explained under practical aspects in the following examples.
+
+## Getting started with prioritylasso
+The data we will use for the examples was simulated and shall represent AML data with 4 blocks of variables. We first have to load the package which contains this data set. 
+```{r}
+library(prioritylasso)
+```
+To take a deeper look at the data, open the description through ```?pl_data```.
+The different types of data are all stored together. To get and define the block structure which implies the priorities, we look at the names of the variables and the matrix dimension.
+
+```{r}
+dim(pl_data)
+colnames(pl_data)[1:30]
+colnames(pl_data)[1025:1029]
+```
+We see that the last column contains the outcome. We will re-save the outcome and the matrix of predictors separately and define the argument ```blocks``` afterwards. We will need that for the application of prioritylasso where the indices have to correspond with the variables in the predictor matrix.
+```{r}
+pl_out <- pl_data[,1029]
+pl_pred <- pl_data[,1:1028]
+blocks <- list(bp1=1:4, bp2=5:9, bp3=10:28, bp4=29:1028)
+```
+For an easier interpretation, we can consider the first block as clinical variables of most importance, the second block as other clinical data, and the third block as mutations. These blocks are all low-dimensional. That will later be an advantage regarding computation time. Another type of data is high dimensional gene expression data. Moreover, ```pl_out``` consists of a binary outcome for 400 subjects.
+Before we go further we want to split the data into training and validation set. The training set should be used to build the model with prioritylasso while the validation data should later be used to assess the prediction accuracy in an independent data set. Here we just do a random split such that 2/3 of the data belongs to the training set and 1/3 to the validation set.
+```{r}
+set.seed(1234)
+label <- sample(dim(pl_pred)[1],round(dim(pl_pred)[1]*(2/3)))
+pl_train <- pl_pred[label,]
+pl_val <- pl_pred[-label,]
+pl_out_train <- pl_out[label]
+pl_out_val <- pl_out[-label]
+```
+We can now run prioritylasso for the first time.
+```{r}
+set.seed(1234)
+pl1 <- prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", type.measure = "auc", 
+                     blocks = blocks, standardize = FALSE)
+```
+Because we have a binary outcome, we specified ```family = "binomial"``` and ```type.measure = "auc"```. The priority structure was given through the block definition in the data set. An extended use of the block definition and the general functionality of prioritylasso will be given in the following sections.
+
+## prioritylasso - extended application
+#### Specifying the priorities
+If we want to specify another block order, we have to redefine the argument ```blocks```. Let us assume that we do not want to include the variables b1 first in the model, but b3 first, b1 second and b2 third. That would be done by ```blocks = list(bp1 = 10:28, bp2 = 1:4, bp3 = 5:9, bp4 = 29:1028)```. So the position on the list indicates when the variables are considered in the model or in other words, the priority. It is not necessary to name the entries of the list, but it may help in avoiding confusion. We chose the names such that "bp1"" means "block of priority 1".
+```{r}
+set.seed(1234)
+pl2 <- prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", type.measure = "auc", 
+                     block1.penalization = TRUE, blocks = list(10:28, 1:4, 5:9,  29:1028),
+                     standardize = FALSE)
+pl2$nzero
+```
+The output lists are to be interpreted according to the definition in ```blocks```. Therefore, the first entry corresponds to the variables of columns 10:28 in the data set.
+
+#### Set a maximal number of nonzero coefficients.
+As we can see in pl2, we have a lot of nonzero coefficients of bp4, although it is the block with lowest priority. In general, there should be a reason why the glmnet procedure chooses these coefficients. On the other hand, it is sometimes not appropriate from a practical point of view that the number exceeds a particular value. Therefore we made it possible to set a maximal number of nonzero coefficients. Because we just want to set a limit for bp4, we set the other entries to ```Inf```.
+```{r}
+set.seed(1234)
+pl3 <- prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", type.measure = "auc", 
+                     block1.penalization = TRUE, blocks = list(10:28, 1:4, 5:9,  29:1028), 
+                     max.coef = c(Inf, Inf, Inf, 10), standardize = FALSE)
+pl3$nzero
+```
+#### Include the block with the highest priority without a penalty
+We can further diversify the option of whether or not bp1 is included without a penalty in the model. In a not penalized version, the block has to be low-dimensional and the model includes all of its variables. In this case, the model fit is stored in ```block1unpen```. Otherwise, the block is treated like the other blocks and a LASSO model is fitted.
+
+```{r}
+set.seed(1234)
+pl4 <- prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", type.measure = "auc", 
+                     block1.penalization = FALSE, blocks = list(1:4, 5:9, 10:28, 29:1028), 
+                     max.coef = c(Inf, Inf, Inf, 10), standardize = FALSE)
+pl4$block1unpen
+pl4$lambda.ind
+```
+The first entries of the values which correspond to the ```blocks``` list remain empty as you can see for the example of ```lambda.ind```.
+
+#### Options for the cross validation procedure
+```nfolds``` and ```lambda.type``` are options which refer to the cross-validation procedure in ```cv.glmnet```. ```nfolds``` specifies the number of folds in the procedure while ```lambda.type``` handles the amount of cross-validation error. It can be set to either ```lambda.min```, which is also the default, or ```lambda.1se```. ```lambda.min``` gives the result with minimum mean cross-validation error, whereas ```lambda.1se``` gives the result such that the cross-validation error is within 1 standard error of the minimum, and thus leads to more sparse results. Note that the latter can only be chosen in combination with no restrictions in ```max.coef```. 
+
+```{r}
+set.seed(1234)
+pl5_min <- prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", 
+                         type.measure = "auc", block1.penalization = TRUE, 
+                         blocks = list(1:4, 5:9, 10:28, 29:1028), 
+                         lambda.type = "lambda.min", standardize = FALSE)
+
+set.seed(1234)
+pl5_1se <- prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", 
+                         type.measure = "auc", block1.penalization = TRUE, 
+                         blocks = list(1:4, 5:9, 10:28, 29:1028), 
+                         lambda.type = "lambda.1se", standardize = FALSE)
+
+pl5_min$nzero
+pl5_1se$nzero
+```
+In addition, other options for prioritylasso can be specified. For example, we can change the type of cross validation measurement for binary outcome to the misclassification error. Examples for other outcome variables are shown in the function documentation.
+Further arguments can be passed to prioritylasso which are used in ```cv.glmnet```, e.g. the elasticnet mixing parameter. Here, we are only using the default value 1 which corresponds to the standard LASSO method, but a parameter ```alpha``` between 0 and 1 can be chosen as well.
+
+#### Some notes on the output
+The function used for every LASSO fit is glmnet which creates a sequence of lambda values. The lambda which is chosen according to ```lambda.type``` is the lambda on position ```lambda.ind``` of the sequence and its value is stored in ```lambda.min```. In general, the lower the value of ```lambda.ind```, the higher the ```lambda.min``` and thus the penalization. This leads to more sparse models. The number of ```lambda``` values can be chosen with an optional argument. We give the output of pl1 as an example.
+```{r}
+pl1$lambda.ind
+pl1$lambda.min
+```
+The values of lambda are generated in every call of glmnet and hence cannot be compared.
+The corresponding mean cross validated error is stored in the list ```min.cvm```. The interpretation of its values depend on the argument ```type.measure```. In our examples with a binary outcome it is usually the area under the ROC curve (AUC).
+```{r}
+pl1$min.cvm
+```
+We see that for the example of pl1 it grows with the number of considered modalities. That is what we expected because the more coefficients we have in our model, the better the prediction should be.
+
+## Use of the function cvm_prioritylasso
+prioritylasso was generally implemented with the idea, that practitioners have prior knowledge about the data that allows them to specify the priorities. However, it might be, especially in the presence of several blocks, that it is not clear which order of blocks is the best. That is why we implemented cvm_prioritylasso that allows us to define more than one possible list of blocks. The function chooses the best block order according to the mean cross-validated error. Analogously, several vectors with maximal coefficients can be specified in ```max.coef.list```. In the next example we do not know if it is better to include variables b4 before those of b3.
+```{r}
+set.seed(1234)
+cvm_pl1 <- cvm_prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", 
+                             type.measure = "auc", standardize = FALSE, 
+                             block1.penalization = FALSE, 
+                             blocks.list = list(list(1:4, 5:9, 10:28, 29:1028), 
+                                                list(1:4, 5:9, 29:1028, 10:28)), 
+                             max.coef.list = list(c(Inf, Inf, Inf, 10), c(Inf, Inf, 10, Inf)))
+cvm_pl1$best.blocks
+```
+We see that the order of blocks which leads to the best result is specified first in ```blocks.list```. It might be inconvenient to define a lot of lists in the block argument. Note that it is not the general idea of prioritylasso to be applied to any order of blocks and fish for the best.
+
+## Validation
+Now we give a detailed example with a validation.
+```{r}
+set.seed(1234)
+pl_fit1 <- prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", 
+                         type.measure = "auc", blocks = list(1:4, 5:9, 10:28, 29:1028), 
+                         block1.penalization = FALSE, max.coef = c(Inf, Inf, Inf, 10), 
+                         standardize = FALSE)
+```
+The idea before simulating the data was to include it in the order as it was defined in the data matrix. The first block, a block with only 4 variables should not be penalized. Because of prior knowledge (we have it because we generated the data, normally a practitioner could have it, too) we know that all of its variables are relevant. The maximal number of coefficients for the last block is restricted to 10. We can easily extract the coefficients and print those which are nonzero.
+```{r}
+coeff1 <- pl_fit1$coefficients
+coeff1 <- coeff1[coeff1 != 0]
+print(round(coeff1, 4))
+```
+We see that every variable from block 1 is nonzero, but we also have variables from every other  block in our model.
+
+```{r, message=FALSE}
+library(pROC)
+```
+The R package ```pROC``` gives a lot possibilities to evaluate and visualize the results. First we can calculate the score and the ROC curve in the training set and get an AUC value. 
+```{r}
+pl1_score <- pl_train[ , names(coeff1)[-1], drop=F] %*% coeff1[-1]
+pl1_roc <- roc(factor(pl_out_train), pl1_score[,1])
+auc(pl1_roc)
+```
+Of course we can't use this as a performance measure because it is estimated based on the data that was already used for training the model and is thus biased. A more appropriate value can be obtained with the test set.
+```{r}
+val1_score <- pl_val[ , names(coeff1)[-1], drop=F] %*% coeff1[-1]
+val1_roc <- roc(factor(pl_out_val), c(val1_score))
+auc(val1_roc)
+```
+To investigate the influence of the priorities on the prediction accuracy, we can calculate the model again with another order of blocks and get the ROC curve in the same way.
+```{r}
+set.seed(1234)
+pl_fit2 <- prioritylasso(X = pl_train, Y = pl_out_train, family = "binomial", 
+                         type.measure = "auc", blocks = list(1:4, 10:28, 5:9, 29:1028), 
+                         block1.penalization = FALSE, max.coef = c(Inf, Inf, Inf, 10), 
+                         standardize = FALSE)
+
+coeff2 <- pl_fit2$coefficients
+coeff2 <- coeff2[coeff2 != 0]
+
+val2_score <- pl_val[ , names(coeff2)[-1], drop=F] %*% coeff2[-1]
+val2_roc <- roc(factor(pl_out_val), c(val2_score))
+auc(val2_roc)
+```
+We can plot the ROC curves and perform a paired test if the two AUC values are equal.
+```{r}
+roc.test(val1_roc, val2_roc, paired=TRUE)
+```
+The test result shows that we cannot reject the hypotheses that the AUC values are equal.
+```{r, fig.width=7.5, fig.height=6}
+plot.roc(val1_roc, grid=0.1)
+plot.roc(val2_roc, col="red", add=TRUE)
+legend("bottomright", legend=c("prioritylasso Score 1", "prioritylasso Score 2"),
+       col=c("black", "red"), lwd=2)
+```
+
+
+
+
