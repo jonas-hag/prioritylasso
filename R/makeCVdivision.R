@@ -1,3 +1,12 @@
+# generates divisions of the data for cross validation
+# n: number of observations
+# K: number of folds
+# nrep: how often should the CV procedure be repeated
+# value:
+# list with one entry for every nrep
+# every nrep entry is a list with K entries
+# every K entry is a vector of the length n with 1 for the observations in the
+# training set and 0 for the observations in the test set
 makeCVdivision <- function(n, K = 5, nrep = 3) {
     
     ngroup <- rep(floor(n/K), times=K)

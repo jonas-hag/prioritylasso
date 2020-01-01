@@ -25,6 +25,7 @@
 #' @param foldid an optional vector of values between 1 and nfold identifying what fold each observation is in.
 #' @param cvoffset logical, whether CV should be used to estimate the offsets. Default is FALSE.
 #' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
+#' @param handle.missingdata how blockwise missing data should be treated. Default is \code{none} which does nothing, \code{ignore} ignores the observations with missing data for the current block and uses the results from the previous block as the offset for the next block.
 #' @param ... other arguments that can be passed to the function \code{cv.glmnet}.
 #'
 #' @return object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block.
@@ -86,9 +87,22 @@
 
 
 
-prioritylasso <- function(X, Y, weights, family, type.measure, blocks, max.coef = NULL,
-                          block1.penalization = TRUE, lambda.type = "lambda.min", standardize = TRUE,
-                          nfolds = 10, foldid, cvoffset = FALSE, cvoffsetnfolds = 10, ...){
+prioritylasso <- function(X,
+                          Y,
+                          weights,
+                          family,
+                          type.measure,
+                          blocks,
+                          max.coef = NULL,
+                          block1.penalization = TRUE,
+                          lambda.type = "lambda.min",
+                          standardize = TRUE,
+                          nfolds = 10,
+                          foldid,
+                          cvoffset = FALSE,
+                          cvoffsetnfolds = 10,
+                          handle.missingdata = c("none", "ignore"),
+                          ...){
 
   if (packageVersion("glmnet") < "2.0.13") {
     stop("glmnet >= 2.0.13 needed for this function.", call. = FALSE)
@@ -175,6 +189,9 @@ prioritylasso <- function(X, Y, weights, family, type.measure, blocks, max.coef 
   } else {
     foldid = sample(rep(seq(nfolds), length = nrow(X)))
   }
+  
+  # input check for handling missing data
+  handle.missingdata <- match(handle.missingdata)
 
 
   lambda.min <- list()
@@ -203,12 +220,14 @@ prioritylasso <- function(X, Y, weights, family, type.measure, blocks, max.coef 
           cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
           pred <- matrix(nrow = nrow(X), ncol = 1)
           for(count in seq(along=cvdiv)) {
+            # if it is not the first block
             if(!is.null(liste[[i]])){
               lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1,actual_block, drop = FALSE],
                                         Y[cvdiv[[count]] == 1], weights[cvdiv[[count]] == 1], offset = liste[[i]][cvdiv[[count]] == 1, drop = FALSE],
                                         family = family, type.measure = type.measure,
                                         nfolds = nfolds, foldid = foldid[cvdiv[[count]] == 1], standardize = standardize, ...)
             }
+            # the first block (no offsets available)
             else {
               lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1,actual_block,drop = FALSE],
                                         Y[cvdiv[[count]] == 1], weights[cvdiv[[count]] == 1], offset = NULL,
