@@ -1,3 +1,9 @@
+# because for the unpenalised first block, when gaussian or binomial is used,
+# the glm saves the data in an environment (it is not explicitly passed as a
+# data frame), the environments differ between different objects, even when
+# the same seed is used. This leads to fails in the tests, therefore the part
+# block1unpen$data is set to NULL in these cases
+# this information is not used by any function, so it can be omitted
 set.seed(1234)
 pl1a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
                       blocks = list(block1=1:75, block2=76:200, block3=201:500),
@@ -7,6 +13,7 @@ set.seed(1234)
 pl1b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
                       blocks = list(block1=1:15, block2=16:200, block3=201:500),
                       block1.penalization = FALSE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5)
+pl1b$block1unpen$data <- NULL
 
 ###
 
@@ -21,12 +28,14 @@ pl2 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "
                      blocks = list(block1=1:15, block2=16:200, block3=201:500),
                      block1.penalization = FALSE, lambda.type = "lambda.min", standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
+pl2$block1unpen$data <- NULL
 
 set.seed(1234)
 pl2a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
                       blocks = list(block1=1:20, block2=21:200, block3=201:500),
                       max.coef = c(Inf,Inf,Inf), block1.penalization = FALSE, lambda.type = "lambda.1se", nfolds = 5,
                       cvoffset = TRUE)
+pl2a$block1unpen$data <- NULL
 
 set.seed(1234)
 pl2b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -39,12 +48,14 @@ pl3 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, 
                      type.measure = "class", blocks = list(block1=1:15, block2=16:200, block3=201:500),
                      block1.penalization = FALSE, standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
+pl3$block1unpen$data <- NULL
 
 set.seed(1234)
 pl3a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
                      type.measure = "auc", blocks = list(block1=1:15, block2=16:200, block3=201:500),
                      block1.penalization = FALSE, standardize = TRUE, nfolds = 4,
                      cvoffset = TRUE)
+pl3a$block1unpen$data <- NULL
 
 set.seed(1234)
 pl3b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
@@ -107,6 +118,12 @@ pl3b_cran <- readRDS(paste0(path, "pl3b_cran.rds"))
 pl4_cran <- readRDS(paste0(path, "pl4_cran.rds"))
 pl5a_cran <- readRDS(paste0(path, "pl5a_cran.rds"))
 pl5b_cran <- readRDS(paste0(path, "pl5b_cran.rds"))
+
+pl1b_cran$block1unpen$data <- NULL
+pl2_cran$block1unpen$data <- NULL
+pl2a_cran$block1unpen$data <- NULL
+pl3_cran$block1unpen$data <- NULL
+pl3a_cran$block1unpen$data <- NULL
 
 
 library(testthat)

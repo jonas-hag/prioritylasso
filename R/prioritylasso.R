@@ -191,7 +191,7 @@ prioritylasso <- function(X,
   }
   
   # input check for handling missing data
-  handle.missingdata <- match(handle.missingdata)
+  handle.missingdata <- match.arg(handle.missingdata)
 
 
   lambda.min <- list()
