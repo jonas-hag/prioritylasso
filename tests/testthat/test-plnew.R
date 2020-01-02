@@ -4,6 +4,7 @@
 # the same seed is used. This leads to fails in the tests, therefore the part
 # block1unpen$data is set to NULL in these cases
 # this information is not used by any function, so it can be omitted
+
 set.seed(1234)
 pl1a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
                       blocks = list(block1=1:75, block2=76:200, block3=201:500),
@@ -125,6 +126,42 @@ pl2a_cran$block1unpen$data <- NULL
 pl3_cran$block1unpen$data <- NULL
 pl3a_cran$block1unpen$data <- NULL
 
+# the calls to glmnet where changed (indexing of observations), but in these
+# cases they should not change the calculations, therefore they are set to NULL
+
+for (i in 1:3) {
+  pl1_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl1a_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl2b_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl3b_cran$glmnet.fit[[i]][["call"]] <- NULL
+  
+  pl5a_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl5b_cran$glmnet.fit[[i]][["call"]] <- NULL
+  
+  pl1$glmnet.fit[[i]][["call"]] <- NULL
+  pl1a$glmnet.fit[[i]][["call"]] <- NULL
+  pl2b$glmnet.fit[[i]][["call"]] <- NULL
+  pl3b$glmnet.fit[[i]][["call"]] <- NULL
+  pl5a$glmnet.fit[[i]][["call"]] <- NULL
+  pl5b$glmnet.fit[[i]][["call"]] <- NULL
+}
+
+# for the examples where block 1 is unpenalised, there are only 2 glmnet objects
+for (i in 2:3) {
+  pl1b_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl2_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl2a_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl3_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl3a_cran$glmnet.fit[[i]][["call"]] <- NULL
+  pl4_cran$glmnet.fit[[i]][["call"]] <- NULL
+  
+  pl1b$glmnet.fit[[i]][["call"]] <- NULL
+  pl2$glmnet.fit[[i]][["call"]] <- NULL
+  pl2a$glmnet.fit[[i]][["call"]] <- NULL
+  pl3$glmnet.fit[[i]][["call"]] <- NULL
+  pl3a$glmnet.fit[[i]][["call"]] <- NULL
+  pl4$glmnet.fit[[i]][["call"]] <- NULL
+}
 
 library(testthat)
 
