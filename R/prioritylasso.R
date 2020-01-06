@@ -16,7 +16,9 @@
 #' For the observations with missing values, the result from the previous block is used as the offset for the next block.
 #' Crossvalidated offsets are not supported with \code{handle.missingdata = ignore}, also the first block must not contain blockwise missing values.
 #' Please note that dealing with single missing values is not supported.
-#' If only one value in a block for one observation is missing, the complete observation for this block is treated as missing.
+#' If only one value in a block for one observation is missing, still the complete observation for this block is treated as missing.
+#' Normally, every observation gets a unique foldid which stays the same across all blocks for the call to \code{cv.glmnet}.
+#' However when \code{handle.missingdata != none}, the foldid is set new for every block.
 #'
 #' @param X a (nxp) matrix of predictors with observations in rows and predictors in columns.
 #' @param Y n-vector giving the value of the response (either continuous, numeric-binary 0/1, or \code{Surv} object).
@@ -199,12 +201,20 @@ prioritylasso <- function(X,
   
   # input check for handling missing data
   handle.missingdata <- match.arg(handle.missingdata)
+  if (handle.missingdata == "none" && sum(is.na(X)) > 0) {
+    stop("X contains missing data. Please use another value than 'none' for handle.missingdata.")
+  }
   if (handle.missingdata != "none" && cvoffset) {
     stop("At the moment, a crossvalidated offset is only supported for complete data sets.")
   }
   
   if (handle.missingdata == "ignore" && sum(is.na(X[, blocks[[1]]])) > 0) {
     stop("For handle.missingdata = ignore, the first block must not contain missing values.")
+  }
+  
+  if (handle.missingdata == "ignore") {
+    foldid <- NULL
+    warning("For handle.missingdata = ignore, the foldids of the observations are chosen individually for every block and not set globally. foldid is set to NULL")
   }
   
   # generate a list which observations to use for which block
@@ -246,7 +256,8 @@ prioritylasso <- function(X,
       current_observations <- observation_index[[i]]
       current_missings <- missing_index[[i]]
 
-      browser()
+      # when foldid <- NULL for handle.missingdata  != "none",
+      # foldid[current_observations] still evaluates to NULL
       lassoerg[[i]] <- cv.glmnet(X[current_observations, actual_block],
                                  Y[current_observations],
                                  weights[current_observations],
@@ -350,7 +361,6 @@ prioritylasso <- function(X,
       }
 
 
-      browser()
       # calculate the new offsets
       if (is.null(current_missings)) {
         new_offsets <- as.matrix(pred)
@@ -439,14 +449,23 @@ prioritylasso <- function(X,
     liste <- list(as.matrix(pred))
     lassoerg <- list(block1erg)
     coeff[[1]] <- block1erg$coefficients
+    
 
     for(i in 2:length(blocks)){
 
       actual_block <- blocks[[i]]
       current_observations <- observation_index[[i]]
-
-      lassoerg[[i]] <- cv.glmnet(X[current_observations, actual_block], Y, weights, offset = liste[[i-1]], family = family, nfolds = nfolds,
-                                 type.measure = type.measure, foldid = foldid, standardize = standardize, ...)
+      current_missings <- missing_index[[i]]
+      
+      lassoerg[[i]] <- cv.glmnet(X[current_observations, actual_block],
+                                 Y[current_observations],
+                                 weights[current_observations],
+                                 offset = liste[[i-1]][current_observations],
+                                 family = family,
+                                 type.measure = type.measure,
+                                 nfolds = nfolds,
+                                 foldid = foldid[current_observations],
+                                 standardize = standardize, ...)
 
       if(lambda.type == "lambda.1se"){
 
@@ -467,10 +486,13 @@ prioritylasso <- function(X,
 
           }
         }
-        #JH adjust newoffset
+        
         else
-          pred <- predict(lassoerg[[i]], newx = X[current_observations, actual_block], newoffset = liste[[i-1]], s = lambda.type,
-                          type = "link")
+          pred <- predict(lassoerg[[i]],
+                        newx = X[current_observations, actual_block],
+                        newoffset = liste[[i-1]][current_observations],
+                        s = lambda.type,
+                        type = "link")
 
         lambda.ind[i] <- which(lassoerg[[i]]$lambda == lassoerg[[i]][lambda.type])
         lambda.min[i] <- lassoerg[[i]][lambda.type]
@@ -509,17 +531,35 @@ prioritylasso <- function(X,
                                                   s = lambda.mintemp, type = "link")
 
           }
-          #JH adjust newoffset
+          
         } else {
-          pred <- predict(lassoerg[[i]], newx=X[current_observations, actual_block], newoffset = liste[[i-1]], s=lambda.min[[i]],
-                          type="link")
+          pred <- predict(lassoerg[[i]],
+                          newx = X[current_observations, actual_block],
+                          newoffset = liste[[i-1]][current_observations],
+                          s = lambda.min[[i]],
+                          type = "link")
         }
 
         lambda.ind[i] <- which(lassoerg[[i]]$lambda == lambda.min[i])
       }
 
 
-      liste[[i]] <- as.matrix(pred)
+      # calculate the new offsets
+      if (is.null(current_missings)) {
+        new_offsets <- as.matrix(pred)
+      } else {
+        # the calculated offsets for this block where there are observations
+        calculated_offsets <- as.matrix(pred)
+        calculated_offsets <- cbind(calculated_offsets, current_observations)
+        # for the missing values, take the offset from the previous block
+        old_offsets <- cbind(liste[[i-1]][current_missings], current_missings)
+        
+        new_offsets <- rbind(calculated_offsets, old_offsets)
+        # bring everything into the correct order
+        index_sorting <- order(new_offsets[, 2])
+        new_offsets <- new_offsets[index_sorting, 1]
+      }
+      liste[[i]] <- new_offsets
 
       min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
       nzero[i] <- lassoerg[[i]]$nzero[lambda.ind[[i]]]
