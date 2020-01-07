@@ -4,6 +4,12 @@
 # the same seed is used. This leads to fails in the tests, therefore the part
 # block1unpen$data is set to NULL in these cases
 # this information is not used by any function, so it can be omitted
+# also, all the names and dimnames of some components of the block1unpen are set
+# to NULL because due to changed code, the names are now different (but contain
+# the same values)
+# also, the call/formula/terms are set to NULL in block1unpen because it changed
+# due to different code (but still should lead to the same coefficients, which
+# are tested)
 
 set.seed(1234)
 pl1a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -15,6 +21,14 @@ pl1b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       blocks = list(block1=1:15, block2=16:200, block3=201:500),
                       block1.penalization = FALSE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5)
 pl1b$block1unpen$data <- NULL
+names(pl1b$block1unpen$effects) <- NULL
+dimnames(pl1b$block1unpen$R) <- NULL
+dimnames(pl1b$block1unpen$qr$qr) <- NULL
+names(pl1b$block1unpen$model) <- NULL
+attr(pl1b$block1unpen$model, "terms") <- NULL
+pl1b$block1unpen$call <- NULL
+pl1b$block1unpen$formula <- NULL
+pl1b$block1unpen$terms <- NULL
 
 ###
 
@@ -30,6 +44,14 @@ pl2 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "
                      block1.penalization = FALSE, lambda.type = "lambda.min", standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
 pl2$block1unpen$data <- NULL
+names(pl2$block1unpen$effects) <- NULL
+dimnames(pl2$block1unpen$R) <- NULL
+dimnames(pl2$block1unpen$qr$qr) <- NULL
+names(pl2$block1unpen$model) <- NULL
+attr(pl2$block1unpen$model, "terms") <- NULL
+pl2$block1unpen$call <- NULL
+pl2$block1unpen$formula <- NULL
+pl2$block1unpen$terms <- NULL
 
 set.seed(1234)
 pl2a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -37,6 +59,14 @@ pl2a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       max.coef = c(Inf,Inf,Inf), block1.penalization = FALSE, lambda.type = "lambda.1se", nfolds = 5,
                       cvoffset = TRUE)
 pl2a$block1unpen$data <- NULL
+names(pl2a$block1unpen$effects) <- NULL
+dimnames(pl2a$block1unpen$R) <- NULL
+dimnames(pl2a$block1unpen$qr$qr) <- NULL
+names(pl2a$block1unpen$model) <- NULL
+attr(pl2a$block1unpen$model, "terms") <- NULL
+pl2a$block1unpen$call <- NULL
+pl2a$block1unpen$formula <- NULL
+pl2a$block1unpen$terms <- NULL
 
 set.seed(1234)
 pl2b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -50,6 +80,14 @@ pl3 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, 
                      block1.penalization = FALSE, standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
 pl3$block1unpen$data <- NULL
+names(pl3$block1unpen$effects) <- NULL
+dimnames(pl3$block1unpen$R) <- NULL
+dimnames(pl3$block1unpen$qr$qr) <- NULL
+names(pl3$block1unpen$model) <- NULL
+attr(pl3$block1unpen$model, "terms") <- NULL
+pl3$block1unpen$call <- NULL
+pl3$block1unpen$formula <- NULL
+pl3$block1unpen$terms <- NULL
 
 set.seed(1234)
 pl3a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
@@ -57,6 +95,14 @@ pl3a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1,
                      block1.penalization = FALSE, standardize = TRUE, nfolds = 4,
                      cvoffset = TRUE)
 pl3a$block1unpen$data <- NULL
+names(pl3a$block1unpen$effects) <- NULL
+dimnames(pl3a$block1unpen$R) <- NULL
+dimnames(pl3a$block1unpen$qr$qr) <- NULL
+names(pl3a$block1unpen$model) <- NULL
+attr(pl3a$block1unpen$model, "terms") <- NULL
+pl3a$block1unpen$call <- NULL
+pl3a$block1unpen$formula <- NULL
+pl3a$block1unpen$terms <- NULL
 
 set.seed(1234)
 pl3b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
@@ -100,6 +146,16 @@ pl4 <- prioritylasso(x, y, family = "cox", type.measure = "deviance", blocks = b
                      block1.penalization = FALSE, lambda.type = "lambda.min", standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
 
+names(pl4$block1unpen$means) <- NULL
+pl4$block1unpen$terms <- NULL
+names(pl4$block1unpen$assign) <- NULL
+names(pl4$block1unpen$model) <- NULL
+attr(pl4$block1unpen$model, "terms") <- NULL
+pl4$block1unpen$formula <- NULL
+pl4$block1unpen$call <- NULL
+
+
+
 # load the comparison data from the CRAN version
 if (grepl("prioritylasso$", getwd())) {
   path <- "data/cranversion_results/"
@@ -125,6 +181,59 @@ pl2_cran$block1unpen$data <- NULL
 pl2a_cran$block1unpen$data <- NULL
 pl3_cran$block1unpen$data <- NULL
 pl3a_cran$block1unpen$data <- NULL
+
+names(pl1b_cran$block1unpen$effects) <- NULL
+dimnames(pl1b_cran$block1unpen$R) <- NULL
+dimnames(pl1b_cran$block1unpen$qr$qr) <- NULL
+names(pl1b_cran$block1unpen$model) <- NULL
+attr(pl1b_cran$block1unpen$model, "terms") <- NULL
+pl1b_cran$block1unpen$call <- NULL
+pl1b_cran$block1unpen$formula <- NULL
+pl1b_cran$block1unpen$terms <- NULL
+
+names(pl2_cran$block1unpen$effects) <- NULL
+dimnames(pl2_cran$block1unpen$R) <- NULL
+dimnames(pl2_cran$block1unpen$qr$qr) <- NULL
+names(pl2_cran$block1unpen$model) <- NULL
+attr(pl2_cran$block1unpen$model, "terms") <- NULL
+pl2_cran$block1unpen$call <- NULL
+pl2_cran$block1unpen$formula <- NULL
+pl2_cran$block1unpen$terms <- NULL
+
+names(pl2a_cran$block1unpen$effects) <- NULL
+dimnames(pl2a_cran$block1unpen$R) <- NULL
+dimnames(pl2a_cran$block1unpen$qr$qr) <- NULL
+names(pl2a_cran$block1unpen$model) <- NULL
+attr(pl2a_cran$block1unpen$model, "terms") <- NULL
+pl2a_cran$block1unpen$call <- NULL
+pl2a_cran$block1unpen$formula <- NULL
+pl2a_cran$block1unpen$terms <- NULL
+
+names(pl3_cran$block1unpen$effects) <- NULL
+dimnames(pl3_cran$block1unpen$R) <- NULL
+dimnames(pl3_cran$block1unpen$qr$qr) <- NULL
+names(pl3_cran$block1unpen$model) <- NULL
+attr(pl3_cran$block1unpen$model, "terms") <- NULL
+pl3_cran$block1unpen$call <- NULL
+pl3_cran$block1unpen$formula <- NULL
+pl3_cran$block1unpen$terms <- NULL
+
+names(pl3a_cran$block1unpen$effects) <- NULL
+dimnames(pl3a_cran$block1unpen$R) <- NULL
+dimnames(pl3a_cran$block1unpen$qr$qr) <- NULL
+names(pl3a_cran$block1unpen$model) <- NULL
+attr(pl3a_cran$block1unpen$model, "terms") <- NULL
+pl3a_cran$block1unpen$call <- NULL
+pl3a_cran$block1unpen$formula <- NULL
+pl3a_cran$block1unpen$terms <- NULL
+
+names(pl4_cran$block1unpen$means) <- NULL
+pl4_cran$block1unpen$terms <- NULL
+names(pl4_cran$block1unpen$assign) <- NULL
+names(pl4_cran$block1unpen$model) <- NULL
+attr(pl4_cran$block1unpen$model, "terms") <- NULL
+pl4_cran$block1unpen$formula <- NULL
+pl4_cran$block1unpen$call <- NULL
 
 # the calls to glmnet where changed (indexing of observations), but in these
 # cases they should not change the calculations, therefore they are set to NULL

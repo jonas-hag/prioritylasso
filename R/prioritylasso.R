@@ -14,7 +14,7 @@
 #' To use the method with blockwise missing data, one can set \code{handle.missingdata = ignore}.
 #' Then, to calculate the coefficients for a given block only the observations with values for this blocks are used.
 #' For the observations with missing values, the result from the previous block is used as the offset for the next block.
-#' Crossvalidated offsets are not supported with \code{handle.missingdata = ignore}, also the first block must not contain blockwise missing values.
+#' Crossvalidated offsets are not supported with \code{handle.missingdata = ignore}.
 #' Please note that dealing with single missing values is not supported.
 #' If only one value in a block for one observation is missing, still the complete observation for this block is treated as missing.
 #' Normally, every observation gets a unique foldid which stays the same across all blocks for the call to \code{cv.glmnet}.
@@ -208,10 +208,6 @@ prioritylasso <- function(X,
     stop("At the moment, a crossvalidated offset is only supported for complete data sets.")
   }
   
-  if (handle.missingdata == "ignore" && sum(is.na(X[, blocks[[1]]])) > 0) {
-    stop("For handle.missingdata = ignore, the first block must not contain missing values.")
-  }
-  
   if (handle.missingdata == "ignore") {
     foldid <- NULL
     warning("For handle.missingdata = ignore, the foldids of the observations are chosen individually for every block and not set globally. foldid is set to NULL")
@@ -369,7 +365,13 @@ prioritylasso <- function(X,
         calculated_offsets <- as.matrix(pred)
         calculated_offsets <- cbind(calculated_offsets, current_observations)
         # for the missing values, take the offset from the previous block
-        old_offsets <- cbind(liste[[i]][current_missings], current_missings)
+        # if the missings are in the first block, use 0 as offset
+        if (i == 1) {
+          old_offsets <- cbind(rep(0, length(current_missings)),
+                               current_missings)
+        } else {
+          old_offsets <- cbind(liste[[i]][current_missings], current_missings)
+        }
         
         new_offsets <- rbind(calculated_offsets, old_offsets)
         # bring everything into the correct order
@@ -397,10 +399,14 @@ prioritylasso <- function(X,
     if(length(blocks[[1]]) >= nrow(X)){
       stop("An unpenalized block 1 is only possible if the number of predictors in this block is smaller than the number of obervations.")
     }
+    
+    current_observations <- observation_index[[1]]
+    current_missings <- missing_index[[1]]
 
     if(family != "cox"){
-      block1erg <- glm(Y ~ X[,blocks[[1]]], family = family, weights = weights)
-      names(block1erg$coefficients) <- substr(names(block1erg$coefficients), start = 17, nchar(names(block1erg$coefficients)))
+      block1erg <- glm(Y[current_observations] ~ X[current_observations, blocks[[1]]],
+                       family = family, weights = weights[current_observations])
+      names(block1erg$coefficients) <- substr(names(block1erg$coefficients), start = 37, nchar(names(block1erg$coefficients)))
       if(cvoffset) {
 
         datablock1 <- data.frame(X[, blocks[[1]], drop=FALSE])
@@ -421,8 +427,9 @@ prioritylasso <- function(X,
       }
 
     } else {
-      block1erg <- coxph(Y ~ X[,blocks[[1]]], weights = weights, model = TRUE)
-      names(block1erg$coefficients) <- substr(names(block1erg$coefficients), start = 17, nchar(names(block1erg$coefficients)))
+      block1erg <- coxph(Y[current_observations] ~ X[current_observations, blocks[[1]]],
+                         weights = weights[current_observations], model = TRUE)
+      names(block1erg$coefficients) <- substr(names(block1erg$coefficients), start = 37, nchar(names(block1erg$coefficients)))
 
       if(cvoffset) {
 
@@ -445,8 +452,24 @@ prioritylasso <- function(X,
       }
 
     }
-
-    liste <- list(as.matrix(pred))
+    
+    # calculate the new offsets
+    if (is.null(current_missings)) {
+      new_offsets <- as.matrix(pred)
+    } else {
+      # the calculated offsets for this block where there are observations
+      calculated_offsets <- as.matrix(pred)
+      calculated_offsets <- cbind(calculated_offsets, current_observations)
+      # for the missing values, use 0 as offset
+      old_offsets <- cbind(rep(0, length(current_missings)), current_missings)
+      
+      new_offsets <- rbind(calculated_offsets, old_offsets)
+      # bring everything into the correct order
+      index_sorting <- order(new_offsets[, 2])
+      new_offsets <- new_offsets[index_sorting, 1]
+    }
+    liste <- list(new_offsets)
+    
     lassoerg <- list(block1erg)
     coeff[[1]] <- block1erg$coefficients
     
