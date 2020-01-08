@@ -239,6 +239,8 @@ prioritylasso <- function(X,
   nzero <- list()
   glmnet.fit <- list()
   coeff <- list()
+  # list for every block, if TRUE the value is missing for this block
+  missing.data <- list()
 
 
   if(block1.penalization){
@@ -251,6 +253,7 @@ prioritylasso <- function(X,
       actual_block <- blocks[[i]]
       current_observations <- observation_index[[i]]
       current_missings <- missing_index[[i]]
+      missing.data[[i]] <- seq(nrow(X)) %in% current_missings
 
       # when foldid <- NULL for handle.missingdata  != "none",
       # foldid[current_observations] still evaluates to NULL
@@ -402,6 +405,7 @@ prioritylasso <- function(X,
     
     current_observations <- observation_index[[1]]
     current_missings <- missing_index[[1]]
+    missing.data[[1]] <- seq(nrow(X)) %in% current_missings
 
     if(family != "cox"){
       block1erg <- glm(Y[current_observations] ~ X[current_observations, blocks[[1]]],
@@ -479,6 +483,7 @@ prioritylasso <- function(X,
       actual_block <- blocks[[i]]
       current_observations <- observation_index[[i]]
       current_missings <- missing_index[[i]]
+      missing.data[[i]] <- seq(nrow(X)) %in% current_missings
       
       lassoerg[[i]] <- cv.glmnet(X[current_observations, actual_block],
                                  Y[current_observations],
@@ -596,9 +601,18 @@ prioritylasso <- function(X,
 
 
 
-  finallist <- list(lambda.ind = lambda.ind, lambda.type = lambda.type, lambda.min = lambda.min,
-                    min.cvm = min.cvm, nzero = nzero, glmnet.fit = glmnet.fit, name = name,
-                    block1unpen = block1erg, coefficients = unlist(coeff), call = match.call())
+  finallist <- list(lambda.ind = lambda.ind,
+                    lambda.type = lambda.type,
+                    lambda.min = lambda.min,
+                    min.cvm = min.cvm,
+                    nzero = nzero,
+                    glmnet.fit = glmnet.fit,
+                    name = name,
+                    block1unpen = block1erg,
+                    coefficients = unlist(coeff),
+                    call = match.call(),
+                    X = X,
+                    missing.data = missing.data)
 
   class(finallist) <- "prioritylasso"
 

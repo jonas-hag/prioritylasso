@@ -26,13 +26,18 @@
 
 
 
-predict.prioritylasso <- function(object, newdata, type = c("link", "response"), ...){
+predict.prioritylasso <- function(object,
+                                  newdata = NULL,
+                                  type = c("link", "response"),
+                                  ...){
 
-  newdata <- data.matrix(newdata)
-
-  if(!is.element(type, c("link", "response"))){
-    stop("type must be either link or response.")
+  if (is.null(newdata)) {
+    newdata <- as.matrix(object$X)
+  } else {
+    newdata <- data.matrix(newdata)
   }
+
+  type <- match.arg(type)
 
   if(is.null(object$block1unpen)){
     if(object$call$family == "cox"){
