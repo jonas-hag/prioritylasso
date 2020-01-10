@@ -10,16 +10,23 @@
 # also, the call/formula/terms are set to NULL in block1unpen because it changed
 # due to different code (but still should lead to the same coefficients, which
 # are tested)
+# compared to the CRAN version, X and missing.data have been added in the value,
+# delete it for comparison
 
 set.seed(1234)
 pl1a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
                       blocks = list(block1=1:75, block2=76:200, block3=201:500),
                       block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5)
+pl1a$X <- NULL
+pl1a$missing.data <- NULL
 
 set.seed(1234)
 pl1b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
                       blocks = list(block1=1:15, block2=16:200, block3=201:500),
                       block1.penalization = FALSE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5)
+
+pl1b$X <- NULL
+pl1b$missing.data <- NULL
 pl1b$block1unpen$data <- NULL
 names(pl1b$block1unpen$effects) <- NULL
 dimnames(pl1b$block1unpen$R) <- NULL
@@ -37,12 +44,16 @@ pl1 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "
                      blocks = list(block1=1:75, block2=76:200, block3=201:500), max.coef = c(5,5,5),
                      block1.penalization = TRUE, lambda.type = "lambda.min", standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
+pl1$X <- NULL
+pl1$missing.data <- NULL
 
 set.seed(1234)
 pl2 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
                      blocks = list(block1=1:15, block2=16:200, block3=201:500),
                      block1.penalization = FALSE, lambda.type = "lambda.min", standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
+pl2$X <- NULL
+pl2$missing.data <- NULL
 pl2$block1unpen$data <- NULL
 names(pl2$block1unpen$effects) <- NULL
 dimnames(pl2$block1unpen$R) <- NULL
@@ -58,6 +69,8 @@ pl2a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       blocks = list(block1=1:20, block2=21:200, block3=201:500),
                       max.coef = c(Inf,Inf,Inf), block1.penalization = FALSE, lambda.type = "lambda.1se", nfolds = 5,
                       cvoffset = TRUE)
+pl2a$X <- NULL
+pl2a$missing.data <- NULL
 pl2a$block1unpen$data <- NULL
 names(pl2a$block1unpen$effects) <- NULL
 dimnames(pl2a$block1unpen$R) <- NULL
@@ -73,12 +86,16 @@ pl2b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       blocks = list(block1=1:20, block2=21:200, block3=201:500),
                       max.coef = c(Inf,Inf,Inf), block1.penalization = TRUE, lambda.type = "lambda.1se", nfolds = 5,
                       cvoffset = TRUE)
+pl2b$X <- NULL
+pl2b$missing.data <- NULL
 
 set.seed(1234)
 pl3 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
                      type.measure = "class", blocks = list(block1=1:15, block2=16:200, block3=201:500),
                      block1.penalization = FALSE, standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
+pl3$X <- NULL
+pl3$missing.data <- NULL
 pl3$block1unpen$data <- NULL
 names(pl3$block1unpen$effects) <- NULL
 dimnames(pl3$block1unpen$R) <- NULL
@@ -94,6 +111,8 @@ pl3a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1,
                      type.measure = "auc", blocks = list(block1=1:15, block2=16:200, block3=201:500),
                      block1.penalization = FALSE, standardize = TRUE, nfolds = 4,
                      cvoffset = TRUE)
+pl3a$X <- NULL
+pl3a$missing.data <- NULL
 pl3a$block1unpen$data <- NULL
 names(pl3a$block1unpen$effects) <- NULL
 dimnames(pl3a$block1unpen$R) <- NULL
@@ -109,6 +128,8 @@ pl3b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1,
                       type.measure = "auc", blocks = list(block1=1:45, block2=46:200, block3=201:500),
                       block1.penalization = TRUE, standardize = TRUE, nfolds = 4,
                       cvoffset = TRUE)
+pl3b$X <- NULL
+pl3b$missing.data <- NULL
 
 
 ### testing weights and foldid
@@ -118,12 +139,16 @@ pl5a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       blocks = list(block1=1:75, block2=76:200, block3=201:500),
                       block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5,
                       weights = sample(rep(seq(1:2), length = 50)))
+pl5a$X <- NULL
+pl5a$missing.data <- NULL
 
 set.seed(1234)
 pl5b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
                       blocks = list(block1=1:75, block2=76:200, block3=201:500),
                       block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 10,
                       foldid=sample(rep(seq(10),length=50)))
+pl5b$X <- NULL
+pl5b$missing.data <- NULL
 
 ###
 
@@ -145,6 +170,8 @@ set.seed(1234)
 pl4 <- prioritylasso(x, y, family = "cox", type.measure = "deviance", blocks = blocks,
                      block1.penalization = FALSE, lambda.type = "lambda.min", standardize = TRUE, nfolds = 5,
                      cvoffset = TRUE)
+pl4$X <- NULL
+pl4$missing.data <- NULL
 
 names(pl4$block1unpen$means) <- NULL
 pl4$block1unpen$terms <- NULL

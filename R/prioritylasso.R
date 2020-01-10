@@ -49,6 +49,8 @@
 #' \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object corresponding to \code{best.blocks}.}
 #' \item{\code{coefficients}}{vector of estimated coefficients. If \code{block1.penalization = FALSE} and \code{family = gaussian} or \code{binomial}, the first entry contains an intercept.}
 #' \item{\code{call}}{the function call.}
+#' \item{\code{X}}{the original data used for the calculation}
+#' \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
 #' }
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
