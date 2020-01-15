@@ -10,6 +10,11 @@
 #' The first entry of \code{blocks} contains the indices of variables of the block with priority 1 (first block included in the model).
 #' Assume that \code{blocks = list(1:100, 101:200, 201:300)} then the block with priority 1 consists of the first 100 variables of the data matrix.
 #' Analogously, the block with priority 2 consists of the variables 101 to 200 and the block with priority 3 of the variables 201 to 300.
+#' 
+#' \code{standardize = TRUE} leads to a standardisation of the covariables (\code{X}) in \code{glmnet} which is recommend by \code{glmnet}.
+#' In case of an unpenalized first block, the covariables are standarized as well.
+#' Please note that the returned coefficients are rescaled to the original scale of the covariates as provided in \code{X}.
+#' Therefore, new data in \code{predict.prioritylasso} should be on the same scale as \code{X}.
 #'
 #' @param X a (nxp) matrix of predictors with observations in rows and predictors in columns.
 #' @param Y n-vector giving the value of the response (either continuous, numeric-binary 0/1, or \code{Surv} object).
@@ -86,9 +91,21 @@
 
 
 
-prioritylasso <- function(X, Y, weights, family, type.measure, blocks, max.coef = NULL,
-                          block1.penalization = TRUE, lambda.type = "lambda.min", standardize = TRUE,
-                          nfolds = 10, foldid, cvoffset = FALSE, cvoffsetnfolds = 10, ...){
+prioritylasso <- function(X,
+                          Y,
+                          weights,
+                          family = c("gaussian", "binomial", "cox"),
+                          type.measure,
+                          blocks,
+                          max.coef = NULL,
+                          block1.penalization = TRUE,
+                          lambda.type = "lambda.min",
+                          standardize = TRUE,
+                          nfolds = 10,
+                          foldid,
+                          cvoffset = FALSE,
+                          cvoffsetnfolds = 10,
+                          ...){
 
   if (packageVersion("glmnet") < "2.0.13") {
     stop("glmnet >= 2.0.13 needed for this function.", call. = FALSE)
@@ -119,9 +136,7 @@ prioritylasso <- function(X, Y, weights, family, type.measure, blocks, max.coef 
     stop("lambda.type must be either lambda.min or lambda.1se.")
   }
 
-  if (!is.element(family, c("gaussian", "binomial", "cox"))){
-    stop("family must be either gaussian, binomial, or cox.")
-  }
+  family <- match.arg(family)
 
   if (family == "gaussian") {
     if (type.measure != "mse")
@@ -297,11 +312,15 @@ prioritylasso <- function(X, Y, weights, family, type.measure, blocks, max.coef 
 
 
 
-  if(!block1.penalization){
-
+  if (block1.penalization) {
+    # penalized first block here
+  } else {
+    # unpenalized first block here
     if(length(blocks[[1]]) >= nrow(X)){
       stop("An unpenalized block 1 is only possible if the number of predictors in this block is smaller than the number of obervations.")
     }
+  }
+
 
     if(family != "cox"){
       block1erg <- glm(Y ~ X[,blocks[[1]]], family = family, weights = weights)
@@ -441,7 +460,7 @@ prioritylasso <- function(X, Y, weights, family, type.measure, blocks, max.coef 
     }
 
     name <- lassoerg[[i]]$name
-  }
+  
 
 
 
@@ -449,7 +468,7 @@ prioritylasso <- function(X, Y, weights, family, type.measure, blocks, max.coef 
                     min.cvm = min.cvm, nzero = nzero, glmnet.fit = glmnet.fit, name = name,
                     block1unpen = block1erg, coefficients = unlist(coeff), call = match.call())
 
-  class(finallist) <- "prioritylasso"
+  class(finallist) <- c("prioritylasso", class(finallist))
 
 
   return(finallist)
