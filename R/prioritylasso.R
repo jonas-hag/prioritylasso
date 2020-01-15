@@ -198,6 +198,44 @@ prioritylasso <- function(X,
   nzero <- list()
   glmnet.fit <- list()
   coeff <- list()
+  start_block <- 1
+  
+  if (!block1.penalization) {
+    if(length(blocks[[1]]) >= nrow(X)){
+      stop("An unpenalized block 1 is only possible if the number of predictors in this block is smaller than the number of obervations.")
+    }
+    
+    block1erg <- glmnet(x = X[, blocks[[1]]],
+                        y = Y,
+                        family = family,
+                        weights = weights,
+                        lambda = 0)
+    
+    if(cvoffset) {
+      
+      datablock1 <- data.frame(X[, blocks[[1]], drop = FALSE])
+      datablock1$Y <- Y
+      
+      cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
+      pred <- matrix(nrow = nrow(X), ncol = 1)
+      for(count in seq(along = cvdiv)) {
+        block1ergtemp <- glmnet(x = datablock1[cvdiv[[count]] == 1,
+                                               which(colnames(datablock1 != "Y"))],
+                                y = datablock1[cvdiv[[count]] == 1, "Y"],
+                                weights = weights[cvdiv[[count]] == 1],
+                                lambda = 0)
+        
+        pred[cvdiv[[count]] == 0, ] <- as.matrix(predict(block1ergtemp,
+                                                         newx = datablock1[cvdiv[[count]] == 0,
+                                                                           which(colnames(datablock1) != "Y")],
+                                                         type = "link"))
+      }
+      
+    } else {
+      pred <- as.matrix(predict(block1erg, newx = X[, blocks[[1]]],
+                                type = "link"))
+    }
+  }
 
 
   if(block1.penalization){
@@ -316,9 +354,7 @@ prioritylasso <- function(X,
     # penalized first block here
   } else {
     # unpenalized first block here
-    if(length(blocks[[1]]) >= nrow(X)){
-      stop("An unpenalized block 1 is only possible if the number of predictors in this block is smaller than the number of obervations.")
-    }
+    
   }
 
 
