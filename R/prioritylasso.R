@@ -106,11 +106,11 @@ prioritylasso <- function(X,
                           cvoffset = FALSE,
                           cvoffsetnfolds = 10,
                           ...){
-
+  
   if (packageVersion("glmnet") < "2.0.13") {
     stop("glmnet >= 2.0.13 needed for this function.", call. = FALSE)
   }
-
+  
   if(is.null(max.coef)){
     max.coef <- rep(+Inf, length(blocks))
   } else {
@@ -122,22 +122,22 @@ prioritylasso <- function(X,
       stop("The length of the entries of argument max.coef must equal the number of blocks.")
     }
   }
-
-
+  
+  
   if(sum(lapply(blocks, length) <= 1) != 0){
     stop("A block has to contain at least two predictors.")
   }
-
+  
   if (anyDuplicated(as.numeric(unlist(blocks))) != 0 || !setequal(as.numeric(unlist(blocks)), 1:ncol(X))) {
     stop("Each predictor should be included in exactly one block.")
   }
-
+  
   if (!is.element(lambda.type, c("lambda.min", "lambda.1se"))) {
     stop("lambda.type must be either lambda.min or lambda.1se.")
   }
-
+  
   family <- match.arg(family)
-
+  
   if (family == "gaussian") {
     if (type.measure != "mse")
       warning("type.measure is set to mse.")
@@ -153,7 +153,7 @@ prioritylasso <- function(X,
     warning("type.measure is set to class.")
     type.measure <- "class"
   }
-
+  
   if(type.measure == "auc") {
     if(cvoffset) {
       if(nrow(X)*((cvoffsetnfolds-1)/cvoffsetnfolds) - nrow(X)*((cvoffsetnfolds-1)/cvoffsetnfolds)*(nfolds-1)/nfolds < 10){
@@ -165,8 +165,8 @@ prioritylasso <- function(X,
         stop(paste("Too few (< 10) observations per fold for type.measure='auc' in cv.lognet; Use nfolds < ", floor(nrow(X)/10)+1, ".", sep=""))
     }
   }
-
-
+  
+  
   if(missing(weights)){
     weights = rep(1, nrow(X))}
   else {
@@ -174,8 +174,8 @@ prioritylasso <- function(X,
       stop(paste("number of elements in weights (", length(weights),
                  ") not equal to the number of rows of X (", nrow(X),
                  ")", sep = "")) }
-
-
+  
+  
   if(!missing(foldid)){
     if (length(foldid) != nrow(X))
       stop(paste("number of elements in foldid (", length(foldid),
@@ -190,14 +190,16 @@ prioritylasso <- function(X,
   } else {
     foldid = sample(rep(seq(nfolds), length = nrow(X)))
   }
-
-
+  
+  
   lambda.min <- list()
   lambda.ind <- list()
   min.cvm <- list()
   nzero <- list()
   glmnet.fit <- list()
   coeff <- list()
+  lassoerg <- list()
+  liste <- list(NULL)
   start_block <- 1
   
   if (!block1.penalization) {
@@ -235,278 +237,143 @@ prioritylasso <- function(X,
       pred <- as.matrix(predict(block1erg, newx = X[, blocks[[1]]],
                                 type = "link"))
     }
-  }
-
-
-  if(block1.penalization){
-
-    lassoerg <- list()
-    liste <- list(NULL)
-
-    for(i in 1:length(blocks)){
-
-      actual_block <- blocks[[i]]
-
-      lassoerg[[i]] <- cv.glmnet(X[,actual_block], Y, weights, offset = liste[[i]], family = family, type.measure = type.measure,
-                                 nfolds = nfolds, foldid = foldid, standardize = standardize, ...)
-
-      if(lambda.type == "lambda.1se"){
-
-        if(cvoffset) {
-          cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
-          pred <- matrix(nrow = nrow(X), ncol = 1)
-          for(count in seq(along=cvdiv)) {
-            if(!is.null(liste[[i]])){
-              lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1,actual_block, drop = FALSE],
-                                        Y[cvdiv[[count]] == 1], weights[cvdiv[[count]] == 1], offset = liste[[i]][cvdiv[[count]] == 1, drop = FALSE],
-                                        family = family, type.measure = type.measure,
-                                        nfolds = nfolds, foldid = foldid[cvdiv[[count]] == 1], standardize = standardize, ...)
-            }
-            else {
-              lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1,actual_block,drop = FALSE],
-                                        Y[cvdiv[[count]] == 1], weights[cvdiv[[count]] == 1], offset = NULL,
-                                        family = family, type.measure = type.measure,
-                                        nfolds = nfolds, foldid = foldid[cvdiv[[count]] == 1], standardize = standardize, ...)
-            }
-
-            pred[cvdiv[[count]] == 0,] <- predict(lassoergtemp, newx = X[cvdiv[[count]] == 0, actual_block],
-                                                  newoffset = liste[[i]][cvdiv[[count]]==1,drop=FALSE],
-                                                  s=lambda.type, type="link")
-
-          }
-        }
-        else
-          pred <- predict(lassoerg[[i]], newx=X[,actual_block], newoffset = liste[[i]], s=lambda.type, type="link")
-
-        lambda.ind[i] <- which(lassoerg[[i]]$lambda == lassoerg[[i]][lambda.type])
-        lambda.min[i] <- lassoerg[[i]][lambda.type]
-      }
-
-      if(lambda.type == "lambda.min"){
-
-        which_lambda <- which(as.numeric(lassoerg[[i]]$nzero) <= max.coef[i])
-
-        if (type.measure != "auc"){
-          lcvmi <-  lassoerg[[i]]$cvm
-        } else {
-          lcvmi <-  -lassoerg[[i]]$cvm
-        }
-
-        lambda.min[i] <- lassoerg[[i]]$lambda[which_lambda[which.min(lcvmi[which_lambda])[1]]]
-
-        if(cvoffset) {
-          cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
-          pred <- matrix(nrow = nrow(X), ncol = 1)
-          for(count in seq(along = cvdiv)) {
-            if(!is.null(liste[[i]])){
-              lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1, actual_block, drop=FALSE], Y[cvdiv[[count]]==1],
-                                        weights[cvdiv[[count]] == 1],
-                                        offset = liste[[i]][cvdiv[[count]]==1,drop=FALSE],
-                                        family = family, type.measure = type.measure,
-                                        nfolds = nfolds, foldid = foldid[cvdiv[[count]] == 1], standardize = standardize, ...)
-            } else {
-              lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1, actual_block, drop=FALSE], Y[cvdiv[[count]]==1],
-                                        weights[cvdiv[[count]] == 1],
-                                        offset = NULL, family = family, type.measure = type.measure,
-                                        nfolds = nfolds, foldid = foldid[cvdiv[[count]] == 1], standardize = standardize, ...)
-            }
-
-            which_lambdatemp <- which(as.numeric(lassoergtemp$nzero) <= max.coef[i])
-
-            if (type.measure != "auc"){
-              lcvmitemp <-  lassoergtemp$cvm
-            } else {
-              lcvmitemp <-  -lassoergtemp$cvm
-            }
-
-            lambda.mintemp <- lassoergtemp$lambda[which_lambdatemp[which.min(lcvmitemp[which_lambdatemp])[1]]]
-            pred[cvdiv[[count]] == 0,] <- predict(lassoergtemp, newx = X[cvdiv[[count]] == 0, actual_block],
-                                                  newoffset = liste[[i]][cvdiv[[count]] == 1, drop=FALSE],
-                                                  s = lambda.mintemp, type = "link")
-
-          }
-        }
-        else
-          pred <- predict(lassoerg[[i]], newx = X[,actual_block], newoffset = liste[[i]], s = lambda.min[[i]],
-                          type = "link")
-
-        lambda.ind[i] <- which(lassoerg[[i]]$lambda == lambda.min[i])
-      }
-
-
-      liste[[i+1]] <- as.matrix(pred)
-
-      min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
-      nzero[i] <- lassoerg[[i]]$nzero[lambda.ind[[i]]]
-      glmnet.fit[[i]] <- lassoerg[[i]]$glmnet.fit
-      coeff[[i]] <- glmnet.fit[[i]]$beta[,lambda.ind[[i]]]
-
+    
+    start_block <- 2
+    liste[[i+1]] <- as.matrix(pred)
+    lassoerg <- list(block1erg)
+    if (family != "cox") {
+      coeff[[1]] <- c(block1erg$a0, as.vector(block1erg$beta))
+    } else {
+      coeff[[1]] <- as.vector(block1erg$beta)
     }
-
-    name <- lassoerg[[i]]$name
-    block1erg <- NULL
-
-  }
-
-
-
-  if (block1.penalization) {
-    # penalized first block here
   } else {
-    # unpenalized first block here
+    block1erg <- NULL
+  }
+  
+  
+  for (i in start_block:length(blocks)) {
+    
+    actual_block <- blocks[[i]]
+    
+    # if i == 1 for the first block, then offset is NULL
+    lassoerg[[i]] <- cv.glmnet(X[,actual_block],
+                               Y,
+                               weights,
+                               offset = liste[[i]],
+                               family = family,
+                               type.measure = type.measure,
+                               nfolds = nfolds,
+                               foldid = foldid,
+                               standardize = standardize,
+                               ...)
+    
+    # determine the lambdas with the best results (and which are used for the
+    # predictions if no crossvalidation of the offsets are used)
+    if (lambda.tpe == "lambda.1se") {
+      lambda_to_use <- "lambda.1se"
+      
+      lambda.ind[i] <- which(lassoerg[[i]]$lambda == lassoerg[[i]][lambda.type])
+      lambda.min[i] <- lassoerg[[i]][lambda.type]
+      
+    } else {
+      # if lambda.type == "lambda.min" calculate the correct lambda
+      # with respect to max.coeff (if not specified, max.coef ist +Inf)
+      which_lambda <- which(as.numeric(lassoerg[[i]]$nzero) <= max.coef[i])
+      
+      if (type.measure != "auc"){
+        lcvmi <- lassoerg[[i]]$cvm
+      } else {
+        lcvmi <- -lassoerg[[i]]$cvm
+      }
+      
+      lambda_to_use <- lassoerg[[i]]$lambda[which_lambda[which.min(lcvmi[which_lambda])[1]]]
+      
+      lambda.min[i] <- lambda_to_use
+      lambda.ind[i] <- which(lassoerg[[i]]$lambda == lambda.min[i])
+    }
+    
+    
+    
+    if(cvoffset) {
+      cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
+      pred <- matrix(nrow = nrow(X), ncol = 1)
+      for(count in seq(along=cvdiv)) {
+        lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1,actual_block, drop = FALSE],
+                                  Y[cvdiv[[count]] == 1],
+                                  weights[cvdiv[[count]] == 1],
+                                  offset = liste[[i]][cvdiv[[count]] == 1, drop = FALSE],
+                                  family = family,
+                                  type.measure = type.measure,
+                                  nfolds = nfolds,
+                                  foldid = foldid[cvdiv[[count]] == 1],
+                                  standardize = standardize,
+                                  ...)
+        
+        # determine the correct lambda to use for the predictions
+        if (lambda.tpe == "lambda.1se") {
+          lambda_to_use <- "lambda.1se"
+        } else {
+          # if lambda.type == "lambda.min" calculate the correct lambda
+          # with respect to max.coeff (if not specified, max.coeff is +Inf)
+          which_lambdatemp <- which(as.numeric(lassoergtemp$nzero) <=
+                                      max.coef[i])
+          
+          if (type.measure != "auc"){
+            lcvmitemp <-  lassoergtemp$cvm
+          } else {
+            lcvmitemp <-  -lassoergtemp$cvm
+          }
+          
+          lambda_to_use <- lassoergtemp$lambda[which_lambdatemp[which.min(lcvmitemp[which_lambdatemp])[1]]]
+          
+        }
+        
+        
+        pred[cvdiv[[count]] == 0, ] <- predict(lassoergtemp,
+                                               newx = X[cvdiv[[count]] == 0, actual_block],
+                                               newoffset = liste[[i]][cvdiv[[count]] == 1, drop = FALSE],
+                                               s = lambda_to_use,
+                                               type = "link")
+        
+      }
+    }
+    else {
+      pred <- predict(lassoerg[[i]],
+                      newx = X[, actual_block],
+                      newoffset = liste[[i]],
+                      s = lambda_to_use,
+                      type = "link")
+    }
+    
+    # store the results for the current block
+    liste[[i+1]] <- as.matrix(pred)
+    
+    min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
+    nzero[i] <- lassoerg[[i]]$nzero[lambda.ind[[i]]]
+    glmnet.fit[[i]] <- lassoerg[[i]]$glmnet.fit
+    coeff[[i]] <- glmnet.fit[[i]]$beta[,lambda.ind[[i]]]
     
   }
-
-
-    if(family != "cox"){
-      block1erg <- glm(Y ~ X[,blocks[[1]]], family = family, weights = weights)
-      names(block1erg$coefficients) <- substr(names(block1erg$coefficients), start = 17, nchar(names(block1erg$coefficients)))
-      if(cvoffset) {
-
-        datablock1 <- data.frame(X[, blocks[[1]], drop=FALSE])
-        datablock1$Y <- Y
-
-        cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
-        pred <- matrix(nrow = nrow(X), ncol=1)
-        for(count in seq(along = cvdiv)) {
-
-          block1ergtemp <- glm(Y ~ ., data = datablock1[cvdiv[[count]] == 1,], weights = weights[cvdiv[[count]] == 1])
-          names(block1ergtemp$coefficients) <- substr(names(block1ergtemp$coefficients), start=17, nchar(names(block1ergtemp$coefficients)))
-
-          pred[cvdiv[[count]]==0,] <- as.matrix(predict(block1ergtemp, newdata = datablock1[cvdiv[[count]] == 0,]))
-        }
-
-      } else {
-        pred <- as.matrix(predict(block1erg))
-      }
-
-    } else {
-      block1erg <- coxph(Y ~ X[,blocks[[1]]], weights = weights, model = TRUE)
-      names(block1erg$coefficients) <- substr(names(block1erg$coefficients), start = 17, nchar(names(block1erg$coefficients)))
-
-      if(cvoffset) {
-
-        datablock1 <- data.frame(X[, blocks[[1]], drop = FALSE])
-        datablock1$Y <- Y
-
-        cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
-        pred <- matrix(nrow = nrow(X), ncol = 1)
-        for(count in seq(along = cvdiv)) {
-          block1ergtemp <- coxph(Y ~ ., data = datablock1[cvdiv[[count]] == 1,], weights = weights[cvdiv[[count]] == 1])
-
-          names(block1ergtemp$coefficients) <- substr(names(block1ergtemp$coefficients), start = 17,
-                                                      nchar(names(block1ergtemp$coefficients)))
-          pred[cvdiv[[count]] == 0,] <- as.matrix(predict(block1ergtemp, newdata = datablock1[cvdiv[[count]] == 0,], type = "lp"))
-        }
-
-      }
-      else {
-        pred <- as.matrix(predict(block1erg, type="lp"))
-      }
-
-    }
-
-    liste <- list(as.matrix(pred))
-    lassoerg <- list(block1erg)
-    coeff[[1]] <- block1erg$coefficients
-
-    for(i in 2:length(blocks)){
-
-      actual_block <- blocks[[i]]
-
-      lassoerg[[i]] <- cv.glmnet(X[,actual_block], Y, weights, offset = liste[[i-1]], family = family, nfolds = nfolds,
-                                 type.measure = type.measure, foldid = foldid, standardize = standardize, ...)
-
-      if(lambda.type == "lambda.1se"){
-
-        if(cvoffset) {
-          cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
-          pred <- matrix(nrow = nrow(X), ncol = 1)
-          for(count in seq(along = cvdiv)) {
-
-            lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1,actual_block, drop = FALSE], Y[cvdiv[[count]] == 1],
-                                      weights[cvdiv[[count]] == 1],
-                                      offset = liste[[i-1]][cvdiv[[count]] == 1, drop=FALSE],
-                                      family = family, type.measure = type.measure,
-                                      nfolds = nfolds, foldid = foldid[cvdiv[[count]] == 1], standardize = standardize, ...)
-
-            pred[cvdiv[[count]] == 0,] <- predict(lassoergtemp, newx = X[cvdiv[[count]] == 0, actual_block],
-                                                  newoffset = liste[[i-1]][cvdiv[[count]] == 1, drop = FALSE],
-                                                  s = lambda.type, type = "link")
-
-          }
-        }
-        else
-          pred <- predict(lassoerg[[i]], newx = X[,actual_block], newoffset = liste[[i-1]], s = lambda.type,
-                          type = "link")
-
-        lambda.ind[i] <- which(lassoerg[[i]]$lambda == lassoerg[[i]][lambda.type])
-        lambda.min[i] <- lassoerg[[i]][lambda.type]
-      } else {
-        which_lambda <- which(as.numeric(lassoerg[[i]]$nzero) <= max.coef[i])
-
-        if (type.measure != "auc"){
-          lcvmi <-  lassoerg[[i]]$cvm
-        } else {
-          lcvmi <-  -lassoerg[[i]]$cvm
-        }
-
-        lambda.min[i] <- lassoerg[[i]]$lambda[which_lambda[which.min(lcvmi[which_lambda])[1]]]
-
-        if(cvoffset) {
-          cvdiv <- makeCVdivision(n=nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
-          pred <- matrix(nrow = nrow(X), ncol=1)
-          for(count in seq(along = cvdiv)) {
-            lassoergtemp <- cv.glmnet(X[cvdiv[[count]] == 1, actual_block, drop = FALSE], Y[cvdiv[[count]] == 1],
-                                      weights[cvdiv[[count]] == 1],
-                                      offset = liste[[i-1]][cvdiv[[count]] == 1, drop = FALSE],
-                                      family = family, type.measure = type.measure,
-                                      nfolds = nfolds, foldid = foldid[cvdiv[[count]] == 1], standardize = standardize, ...)
-
-            which_lambdatemp <- which(as.numeric(lassoergtemp$nzero) <= max.coef[i])
-
-            if (type.measure != "auc") {
-              lcvmitemp <-  lassoergtemp$cvm
-            } else {
-              lcvmitemp <-  -lassoergtemp$cvm
-            }
-
-            lambda.mintemp <- lassoergtemp$lambda[which_lambdatemp[which.min(lcvmitemp[which_lambdatemp])[1]]]
-            pred[cvdiv[[count]] == 0,] <- predict(lassoergtemp, newx=X[cvdiv[[count]] == 0, actual_block],
-                                                  newoffset = liste[[i-1]][cvdiv[[count]] == 1, drop = FALSE],
-                                                  s = lambda.mintemp, type = "link")
-
-          }
-        } else {
-          pred <- predict(lassoerg[[i]], newx=X[,actual_block], newoffset = liste[[i-1]], s=lambda.min[[i]],
-                          type="link")
-        }
-
-        lambda.ind[i] <- which(lassoerg[[i]]$lambda == lambda.min[i])
-      }
-
-
-      liste[[i]] <- as.matrix(pred)
-
-      min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
-      nzero[i] <- lassoerg[[i]]$nzero[lambda.ind[[i]]]
-      glmnet.fit[[i]] <- lassoerg[[i]]$glmnet.fit
-      coeff[[i]] <- glmnet.fit[[i]]$beta[,lambda.ind[[i]]]
-
-    }
-
-    name <- lassoerg[[i]]$name
   
-
-
-
-  finallist <- list(lambda.ind = lambda.ind, lambda.type = lambda.type, lambda.min = lambda.min,
-                    min.cvm = min.cvm, nzero = nzero, glmnet.fit = glmnet.fit, name = name,
-                    block1unpen = block1erg, coefficients = unlist(coeff), call = match.call())
-
+  name <- lassoerg[[i]]$name
+  
+  
+  
+  
+  finallist <- list(lambda.ind = lambda.ind,
+                    lambda.type = lambda.type,
+                    lambda.min = lambda.min,
+                    min.cvm = min.cvm,
+                    nzero = nzero,
+                    glmnet.fit = glmnet.fit,
+                    name = name,
+                    block1unpen = block1erg,
+                    coefficients = unlist(coeff),
+                    call = match.call())
+  
   class(finallist) <- c("prioritylasso", class(finallist))
-
-
+  
+  
   return(finallist)
-
+  
 }
