@@ -215,21 +215,27 @@ prioritylasso <- function(X,
     
     if(cvoffset) {
       
-      datablock1 <- data.frame(X[, blocks[[1]], drop = FALSE])
-      datablock1$Y <- Y
+      datablock1 <- as.matrix(X[, blocks[[1]], drop = FALSE])
       
       cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
       pred <- matrix(nrow = nrow(X), ncol = 1)
       for(count in seq(along = cvdiv)) {
-        block1ergtemp <- glmnet(x = datablock1[cvdiv[[count]] == 1,
-                                               which(colnames(datablock1 != "Y"))],
-                                y = datablock1[cvdiv[[count]] == 1, "Y"],
+        
+        # the response for a survival analysis is a matrix, therefore the
+        # indexing is different
+        if (family == "cox") {
+          current_y <- Y[cvdiv[[count]] == 1, ]
+        } else {
+          current_y <- Y[cvdiv[[count]] == 1]
+        }
+        block1ergtemp <- glmnet(x = datablock1[cvdiv[[count]] == 1, ],
+                                y = current_y,
                                 weights = weights[cvdiv[[count]] == 1],
-                                lambda = 0)
+                                lambda = 0,
+                                family = family)
         
         pred[cvdiv[[count]] == 0, ] <- as.matrix(predict(block1ergtemp,
-                                                         newx = datablock1[cvdiv[[count]] == 0,
-                                                                           which(colnames(datablock1) != "Y")],
+                                                         newx = datablock1[cvdiv[[count]] == 0, ],
                                                          type = "link"))
       }
       
@@ -239,7 +245,7 @@ prioritylasso <- function(X,
     }
     
     start_block <- 2
-    liste[[i+1]] <- as.matrix(pred)
+    liste[[2]] <- as.matrix(pred)
     lassoerg <- list(block1erg)
     if (family != "cox") {
       coeff[[1]] <- c(block1erg$a0, as.vector(block1erg$beta))
