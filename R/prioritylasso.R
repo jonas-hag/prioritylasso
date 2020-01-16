@@ -269,7 +269,7 @@ prioritylasso <- function(X,
     
     # determine the lambdas with the best results (and which are used for the
     # predictions if no crossvalidation of the offsets are used)
-    if (lambda.tpe == "lambda.1se") {
+    if (lambda.type == "lambda.1se") {
       lambda_to_use <- "lambda.1se"
       
       lambda.ind[i] <- which(lassoerg[[i]]$lambda == lassoerg[[i]][lambda.type])
@@ -310,7 +310,7 @@ prioritylasso <- function(X,
                                   ...)
         
         # determine the correct lambda to use for the predictions
-        if (lambda.tpe == "lambda.1se") {
+        if (lambda.type == "lambda.1se") {
           lambda_to_use <- "lambda.1se"
         } else {
           # if lambda.type == "lambda.min" calculate the correct lambda
