@@ -96,9 +96,9 @@ context("tests for prioritylasso")
 test_that("testing block1unpen", {
 
   expect_that(pl1$block1unpen, testthat::equals(NULL))
-  expect_that(pl2$block1unpen, is_a("glmnet"))
-  expect_that(pl3$block1unpen, is_a("glmnet"))
-  expect_that(pl4$block1unpen, is_a("glmnet"))
+  expect_that(pl2$block1unpen, is_a("glm"))
+  expect_that(pl3$block1unpen, is_a("glm"))
+  expect_that(pl4$block1unpen, is_a("coxph"))
 
 })
 

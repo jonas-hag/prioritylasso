@@ -203,55 +203,65 @@ prioritylasso <- function(X,
   start_block <- 1
   
   if (!block1.penalization) {
-    if(length(blocks[[1]]) >= nrow(X)){
+    if (length(blocks[[1]]) >= nrow(X)){
       stop("An unpenalized block 1 is only possible if the number of predictors in this block is smaller than the number of obervations.")
     }
     
-    block1erg <- glmnet(x = X[, blocks[[1]]],
-                        y = Y,
-                        family = family,
-                        weights = weights,
-                        lambda = 0)
+    if (family != "cox") {
+      block1erg <- glm(Y ~ X[,blocks[[1]]],
+                       family = family,
+                       weights = weights)
+      predict_type <- "link"
+      
+    } else {
+      block1erg <- coxph(Y ~ X[,blocks[[1]]],
+                         weights = weights,
+                         model = TRUE)
+      predict_type <- "lp"
+    }
+    names(block1erg$coefficients) <- substr(names(block1erg$coefficients),
+                                            start = 17,
+                                            nchar(names(block1erg$coefficients)))
     
     if(cvoffset) {
       
-      datablock1 <- as.matrix(X[, blocks[[1]], drop = FALSE])
+      datablock1 <- data.frame(X[, blocks[[1]], drop = FALSE])
+      datablock1$Y <- Y
       
       cvdiv <- makeCVdivision(n = nrow(X), K = cvoffsetnfolds, nrep = 1)[[1]]
       pred <- matrix(nrow = nrow(X), ncol = 1)
       for(count in seq(along = cvdiv)) {
         
-        # the response for a survival analysis is a matrix, therefore the
-        # indexing is different
-        if (family == "cox") {
-          current_y <- Y[cvdiv[[count]] == 1, ]
+        if (family != "cox") {
+          block1ergtemp <- glm(Y ~ .,
+                               data = datablock1[cvdiv[[count]] == 1, ],
+                               weights = weights[cvdiv[[count]] == 1],
+                               family = family)
+          
+          
+          
         } else {
-          current_y <- Y[cvdiv[[count]] == 1]
+          block1ergtemp <- coxph(Y ~ ., data = datablock1[cvdiv[[count]] == 1, ],
+                                 weights = weights[cvdiv[[count]] == 1])
+          
         }
-        block1ergtemp <- glmnet(x = datablock1[cvdiv[[count]] == 1, ],
-                                y = current_y,
-                                weights = weights[cvdiv[[count]] == 1],
-                                lambda = 0,
-                                family = family)
+        names(block1ergtemp$coefficients) <- substr(names(block1ergtemp$coefficients),
+                                                    start = 17,
+                                                    nchar(names(block1ergtemp$coefficients)))
+        pred[cvdiv[[count]]==0, ] <- as.matrix(predict(block1ergtemp,
+                                                       newdata = datablock1[cvdiv[[count]] == 0, ]),
+                                               type = predict_type)
         
-        pred[cvdiv[[count]] == 0, ] <- as.matrix(predict(block1ergtemp,
-                                                         newx = datablock1[cvdiv[[count]] == 0, ],
-                                                         type = "link"))
       }
       
     } else {
-      pred <- as.matrix(predict(block1erg, newx = X[, blocks[[1]]],
-                                type = "link"))
+      pred <- as.matrix(predict(block1erg, type = predict_type))
     }
     
     start_block <- 2
     liste[[2]] <- as.matrix(pred)
     lassoerg <- list(block1erg)
-    if (family != "cox") {
-      coeff[[1]] <- c(block1erg$a0, as.vector(block1erg$beta))
-    } else {
-      coeff[[1]] <- as.vector(block1erg$beta)
-    }
+    coeff[[1]] <- block1erg$coefficients
   } else {
     block1erg <- NULL
   }

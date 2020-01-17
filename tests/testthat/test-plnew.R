@@ -12,6 +12,8 @@
 # are tested)
 # compared to the CRAN version, X and missing.data have been added in the value,
 # delete it for comparison
+# compared to the CRAN version, class now comprises of two classes (additionally
+# the original list class) -> delete for comparison
 
 set.seed(1234)
 pl1a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -19,6 +21,7 @@ pl1a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5)
 pl1a$X <- NULL
 pl1a$missing.data <- NULL
+class(pl1a) <- NULL
 
 set.seed(1234)
 pl1b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -36,6 +39,7 @@ attr(pl1b$block1unpen$model, "terms") <- NULL
 pl1b$block1unpen$call <- NULL
 pl1b$block1unpen$formula <- NULL
 pl1b$block1unpen$terms <- NULL
+class(pl1b) <- NULL
 
 ###
 
@@ -46,6 +50,7 @@ pl1 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "
                      cvoffset = TRUE)
 pl1$X <- NULL
 pl1$missing.data <- NULL
+class(pl1) <- NULL
 
 set.seed(1234)
 pl2 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -63,6 +68,7 @@ attr(pl2$block1unpen$model, "terms") <- NULL
 pl2$block1unpen$call <- NULL
 pl2$block1unpen$formula <- NULL
 pl2$block1unpen$terms <- NULL
+class(pl2) <- NULL
 
 set.seed(1234)
 pl2a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -80,6 +86,7 @@ attr(pl2a$block1unpen$model, "terms") <- NULL
 pl2a$block1unpen$call <- NULL
 pl2a$block1unpen$formula <- NULL
 pl2a$block1unpen$terms <- NULL
+class(pl2a) <- NULL
 
 set.seed(1234)
 pl2b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -88,6 +95,7 @@ pl2b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       cvoffset = TRUE)
 pl2b$X <- NULL
 pl2b$missing.data <- NULL
+class(pl2b) <- NULL
 
 set.seed(1234)
 pl3 <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
@@ -105,12 +113,13 @@ attr(pl3$block1unpen$model, "terms") <- NULL
 pl3$block1unpen$call <- NULL
 pl3$block1unpen$formula <- NULL
 pl3$block1unpen$terms <- NULL
+class(pl3) <- NULL
 
 set.seed(1234)
 pl3a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
-                     type.measure = "auc", blocks = list(block1=1:15, block2=16:200, block3=201:500),
-                     block1.penalization = FALSE, standardize = TRUE, nfolds = 4,
-                     cvoffset = TRUE)
+                      type.measure = "auc", blocks = list(block1=1:15, block2=16:200, block3=201:500),
+                      block1.penalization = FALSE, standardize = TRUE, nfolds = 4,
+                      cvoffset = TRUE)
 pl3a$X <- NULL
 pl3a$missing.data <- NULL
 pl3a$block1unpen$data <- NULL
@@ -122,6 +131,7 @@ attr(pl3a$block1unpen$model, "terms") <- NULL
 pl3a$block1unpen$call <- NULL
 pl3a$block1unpen$formula <- NULL
 pl3a$block1unpen$terms <- NULL
+class(pl3a) <- NULL
 
 set.seed(1234)
 pl3b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
@@ -130,6 +140,7 @@ pl3b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1,
                       cvoffset = TRUE)
 pl3b$X <- NULL
 pl3b$missing.data <- NULL
+class(pl3b) <- NULL
 
 
 ### testing weights and foldid
@@ -141,6 +152,7 @@ pl5a <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       weights = sample(rep(seq(1:2), length = 50)))
 pl5a$X <- NULL
 pl5a$missing.data <- NULL
+class(pl5a) <- NULL
 
 set.seed(1234)
 pl5b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -149,6 +161,7 @@ pl5b <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = 
                       foldid=sample(rep(seq(10),length=50)))
 pl5b$X <- NULL
 pl5b$missing.data <- NULL
+class(pl5b) <- NULL
 
 ###
 
@@ -180,6 +193,7 @@ names(pl4$block1unpen$model) <- NULL
 attr(pl4$block1unpen$model, "terms") <- NULL
 pl4$block1unpen$formula <- NULL
 pl4$block1unpen$call <- NULL
+class(pl4) <- NULL
 
 
 
@@ -299,12 +313,25 @@ for (i in 2:3) {
   pl4$glmnet.fit[[i]][["call"]] <- NULL
 }
 
+class(pl1_cran) <- NULL
+class(pl1a_cran) <- NULL
+class(pl1b_cran) <- NULL
+class(pl2_cran) <- NULL
+class(pl2a_cran) <- NULL
+class(pl2b_cran) <- NULL
+class(pl3_cran) <- NULL
+class(pl3a_cran) <- NULL
+class(pl3b_cran) <- NULL
+class(pl4_cran) <- NULL
+class(pl5a_cran) <- NULL
+class(pl5b_cran) <- NULL
+
 library(testthat)
 
 context("tests for the further developed prioritylasso")
 
 test_that("the further developed prioritylasso leads to the same results as the CRAN version", {
-
+  
   expect_equal(pl1, pl1_cran, max_diffs = 20, max_lines = 10)
   expect_equal(pl1a, pl1a_cran, max_diffs = 20, max_lines = 10)
   expect_equal(pl1b, pl1b_cran, max_diffs = 20, max_lines = 10)
@@ -317,5 +344,5 @@ test_that("the further developed prioritylasso leads to the same results as the 
   expect_equal(pl4, pl4_cran, max_diffs = 20, max_lines = 10)
   expect_equal(pl5a, pl5a_cran, max_diffs = 20, max_lines = 10)
   expect_equal(pl5b, pl5b_cran, max_diffs = 20, max_lines = 10)
-
+  
 })
