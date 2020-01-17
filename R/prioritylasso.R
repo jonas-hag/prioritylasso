@@ -12,7 +12,7 @@
 #' Analogously, the block with priority 2 consists of the variables 101 to 200 and the block with priority 3 of the variables 201 to 300.
 #' 
 #' \code{standardize = TRUE} leads to a standardisation of the covariables (\code{X}) in \code{glmnet} which is recommend by \code{glmnet}.
-#' In case of an unpenalized first block, the covariables are standarized as well.
+#' In case of an unpenalized first block, the covariables for the first block are not standardized.
 #' Please note that the returned coefficients are rescaled to the original scale of the covariates as provided in \code{X}.
 #' Therefore, new data in \code{predict.prioritylasso} should be on the same scale as \code{X}.
 #'
