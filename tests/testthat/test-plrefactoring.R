@@ -185,9 +185,9 @@ pl4$block1unpen$call <- NULL
 
 # load the comparison data from the CRAN version
 if (grepl("prioritylasso$", getwd())) {
-  path <- "data/cranversion_results/"
+  path <- "data/refactoring_results/"
 } else {
-  path <- "../../data/cranversion_results/"
+  path <- "../../data/refactoring_results/"
 }
 
 pl1_cran <- readRDS(paste0(path, "pl1_cran.rds"))
@@ -303,7 +303,7 @@ library(testthat)
 
 context("tests for the further developed prioritylasso")
 
-test_that("the further developed prioritylasso leads to the same results as the CRAN version", {
+test_that("the further developed prioritylasso leads to the same results as the refactored version", {
 
   expect_equal(pl1, pl1_cran)
   expect_equal(pl1a, pl1a_cran)

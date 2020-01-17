@@ -118,7 +118,7 @@ test_that("testing error messages", {
   expect_that(prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rpois(50, 3), family = "poisson", type.measure = "mse",
                             blocks = list(block1=1:75, block2=76:200, block3=201:500),
                             block1.penalization = TRUE, nfolds = 5),
-              throws_error("family must be either gaussian, binomial, or cox."))
+              throws_error("'arg' should be one of \"gaussian\", \"binomial\", \"cox\""))
 
   expect_that(prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
                             type.measure = "class", blocks = list(block1=1:75, block2=76:200, block3=201:500),
@@ -201,12 +201,12 @@ test_that("testing other stuff", {
   expect_that(pl1$nzero, is_a("list"))
   expect_match(pl1$name, "Mean-Squared Error")
   expect_true(pl1$nzero[[1]] <= 5)
-  expect_true(class(pl1a) == "prioritylasso")
-  expect_true(class(pl1b) == "prioritylasso")
+  expect_true(class(pl1a)[1] == "prioritylasso")
+  expect_true(class(pl1b)[1] == "prioritylasso")
   expect_true(pl2a$lambda.type <= "lambda.1se")
   expect_true(pl2b$lambda.type <= "lambda.1se")
-  expect_true(class(pl3a) == "prioritylasso")
-  expect_true(class(pl3b) == "prioritylasso")
+  expect_true(class(pl3a)[1] == "prioritylasso")
+  expect_true(class(pl3b)[1] == "prioritylasso")
   expect_match(pl5a$name, "Mean-Squared Error")
   expect_match(pl5b$name, "Mean-Squared Error")
 
