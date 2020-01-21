@@ -2,9 +2,14 @@
 #'
 #' Makes predictions for a \code{prioritylasso} object. It can be chosen between linear predictors or fitted values.
 #'
+#' \code{handle.missingdata} specifies how to deal with missing data.
+#' The default \code{none} cannot handle missing data, \code{ignore} leaves out
+#' the missing data for the calculation of the prediction.
+#'
 #' @param object An object of class \code{prioritylasso}.
 #' @param newdata (nnew \code{x} p) matrix or data frame with new values.
 #' @param type Specifies the type of predictions. \code{link} gives the linear predictors for all types of response and \code{response} gives the fitted values.
+#' @param handle.missingdata Specifies how to deal with missing data.
 #' @param ... Further arguments passed to or from other methods.
 #'
 #' @return Predictions that depend on \code{type}.
@@ -26,12 +31,28 @@
 
 
 
-predict.prioritylasso <- function(object, newdata, type = c("link", "response"), ...){
+predict.prioritylasso <- function(object,
+                                  newdata = NULL,
+                                  type = c("link", "response"),
+                                  handle.missingdata = c("none", "ignore"),
+                                  ...){
 
-  newdata <- data.matrix(newdata)
+  if (is.null(newdata)) {
+    newdata <- as.matrix(object$X)
+  } else {
+    newdata <- data.matrix(newdata)
+  }
 
-  if(!is.element(type, c("link", "response"))){
-    stop("type must be either link or response.")
+  type <- match.arg(type)
+  handle.missingdata <- match.arg(handle.missingdata)
+  
+  if (handle.missingdata == "none" && sum(is.na(newdata)) > 0) {
+    stop("X contains missing data. Please use another value than 'none' for handle.missingdata.")
+  }
+  
+  # if missing data should be ignored, set NAs to 0
+  if (handle.missingdata == "ignore") {
+    newdata <- replace(newdata, which(is.na(newdata)), 0)
   }
 
   if(is.null(object$block1unpen)){
