@@ -39,7 +39,7 @@
 #' @param foldid an optional vector of values between 1 and nfold identifying what fold each observation is in.
 #' @param cvoffset logical, whether CV should be used to estimate the offsets. Default is FALSE.
 #' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
-#' @param handle.missingdata how blockwise missing data should be treated. Default is \code{none} which does nothing, \code{ignore} ignores the observations with missing data for the current block and uses the results from the previous block as the offset for the next block.
+#' @param mcontrol controls how to deal with blockwise missing data. For details see below or \code{missing.control}
 #' @param ... other arguments that can be passed to the function \code{cv.glmnet}.
 #'
 #' @return object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block.
@@ -68,6 +68,7 @@
 #' @import glmnet
 #' @import survival
 #' @import utils
+#' @importFrom checkmate assert_class
 #' @examples
 #' # gaussian
 #'   prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian",
@@ -117,7 +118,7 @@ prioritylasso <- function(X,
                           foldid,
                           cvoffset = FALSE,
                           cvoffsetnfolds = 10,
-                          handle.missingdata = c("none", "ignore"),
+                          mcontrol = missing.control(),
                           ...){
   
   
@@ -206,18 +207,21 @@ prioritylasso <- function(X,
   }
   
   # input check for handling missing data
-  handle.missingdata <- match.arg(handle.missingdata)
-  if (handle.missingdata == "none" && sum(is.na(X)) > 0) {
+  assert_class(mcontrol, "pl.missing.control")
+  if (mcontrol$handle.missingdata == "none" && sum(is.na(X)) > 0) {
     stop("X contains missing data. Please use another value than 'none' for handle.missingdata.")
   }
-  if (handle.missingdata != "none" && cvoffset) {
+  if (mcontrol$handle.missingdata != "none" && cvoffset) {
     stop("At the moment, a crossvalidated offset is only supported for complete data sets.")
   }
   
-  if (handle.missingdata == "ignore") {
+  if (mcontrol$handle.missingdata == "ignore" ||
+      mcontrol$handle.missingdata == "impute_offset") {
     foldid <- NULL
-    warning("For handle.missingdata = ignore, the foldids of the observations are chosen individually for every block and not set globally. foldid is set to NULL")
+    warning(paste0("For handle.missingdata = ", mcontrol$handle.missingdata, ", the foldids of the observations are chosen individually for every block and not set globally. foldid is set to NULL"))
   }
+  
+  
   
   # generate a list which observations to use for which block
   # this is important for handle.missingdata = ignore
