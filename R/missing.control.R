@@ -10,7 +10,7 @@
 missing.control <- function(handle.missingdata = c("none", "ignore",
                                                    "impute.offset"),
                             impute.offset.cases = "complete.cases",
-                            perc.comp.cases.warning = 0.1) {
+                            perc.comp.cases.warning = 0.3) {
   
   handle.missingdata <- match.arg(handle.missingdata)
   impute.offset.cases <- match.arg(impute.offset.cases)

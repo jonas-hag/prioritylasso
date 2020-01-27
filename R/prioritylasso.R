@@ -215,10 +215,38 @@ prioritylasso <- function(X,
     stop("At the moment, a crossvalidated offset is only supported for complete data sets.")
   }
   
+  # issue warnings concering missing data handling
   if (mcontrol$handle.missingdata == "ignore" ||
       mcontrol$handle.missingdata == "impute_offset") {
     foldid <- NULL
     warning(paste0("For handle.missingdata = ", mcontrol$handle.missingdata, ", the foldids of the observations are chosen individually for every block and not set globally. foldid is set to NULL"))
+  }
+  
+  if (mcontrol$handle.missingdata == "impute_offset" &&
+      mcontrol$impute.offset.cases == "complete.cases") {
+    # calculate fraction of complete cases
+    perc_complete_cases <- nrow(complete.cases(X)) / nrow(X)
+    
+    if (nrow(complete.cases(X)) == 0) {
+      stop("The dataset contains no complete cases (over all blocks). Imputation of the offsets not possible.")
+    }
+    if (perc_complete_cases < mcontrol$perc.comp.cases.warning) {
+      warning(paste0("The fraction of complete cases only is ",
+                     round(perc_complete_cases, digits = 2)))
+    }
+    
+    # check that every observation with missing data only has one missing block
+    missing_index_overview <- matrix(FALSE, nrow = nrow(X),
+                                     ncol = length(blocks))
+    for (i in seq_along(blocks)) {
+      missing_index_overview[, i] <- !complete.cases(X[, blocks[[i]]])
+    }
+    for (i in seq_along(nrow(missing_index_overview))) {
+      if (sum(missing_index_overview[i, ]) > 1) {
+        stop("For impute.offset.cases = 'complete.cases', every observation must only contain one missing block. ")
+      }
+    }
+    
   }
   
   
@@ -323,11 +351,18 @@ prioritylasso <- function(X,
     if (is.null(current_missings)) {
       new_offsets <- as.matrix(pred)
     } else {
-      # the calculated offsets for this block where there are observations
       calculated_offsets <- as.matrix(pred)
       calculated_offsets <- cbind(calculated_offsets, current_observations)
+      # use 0 as the offset for the missing data -> needs more clarification
+      if (mcontrol$handle.missingdata == "ignore") {
+      # the calculated offsets for this block where there are observations
       # for the missing values, use 0 as offset
       old_offsets <- cbind(rep(0, length(current_missings)), current_missings)
+      }
+      # impute the missing offsets
+      if (mcontrol$handle.mssingdata == "impute") {
+        
+      }
       
       new_offsets <- rbind(calculated_offsets, old_offsets)
       # bring everything into the correct order
@@ -465,6 +500,12 @@ prioritylasso <- function(X,
       index_sorting <- order(new_offsets[, 2])
       new_offsets <- new_offsets[index_sorting, 1]
     }
+    new_offsets <- calculate_offsets(current_missings = current_missings,
+                                     current_observations = current_observations,
+                                     mcontrol = mcontrol,
+                                     current_block = i,
+                                     pred = pred,
+                                     liste = liste)
     liste[[i+1]] <- new_offsets
     
     min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
