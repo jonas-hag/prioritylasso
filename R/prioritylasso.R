@@ -348,27 +348,12 @@ prioritylasso <- function(X,
     #JH change here or add check to forbid missing data in first block until
     # further clarification
     # calculate the new offsets
-    if (is.null(current_missings)) {
-      new_offsets <- as.matrix(pred)
-    } else {
-      calculated_offsets <- as.matrix(pred)
-      calculated_offsets <- cbind(calculated_offsets, current_observations)
-      # use 0 as the offset for the missing data -> needs more clarification
-      if (mcontrol$handle.missingdata == "ignore") {
-      # the calculated offsets for this block where there are observations
-      # for the missing values, use 0 as offset
-      old_offsets <- cbind(rep(0, length(current_missings)), current_missings)
-      }
-      # impute the missing offsets
-      if (mcontrol$handle.mssingdata == "impute") {
-        
-      }
-      
-      new_offsets <- rbind(calculated_offsets, old_offsets)
-      # bring everything into the correct order
-      index_sorting <- order(new_offsets[, 2])
-      new_offsets <- new_offsets[index_sorting, 1]
-    }
+    new_offsets <- calculate_offsets(current_missings = current_missings,
+                                     current_observations = current_observations,
+                                     mcontrol = mcontrol,
+                                     current_block = 1,
+                                     pred = pred,
+                                     liste = liste)
     liste[[2]] <- new_offsets
     lassoerg <- list(block1erg)
     coeff[[1]] <- block1erg$coefficients
@@ -480,26 +465,6 @@ prioritylasso <- function(X,
     
     # store the results for the current block
     # calculate the new offsets
-    if (is.null(current_missings)) {
-      new_offsets <- as.matrix(pred)
-    } else {
-      # the calculated offsets for this block where there are observations
-      calculated_offsets <- as.matrix(pred)
-      calculated_offsets <- cbind(calculated_offsets, current_observations)
-      # for the missing values, take the offset from the previous block
-      # if the missings are in the first block, use 0 as offset
-      if (i == 1) {
-        old_offsets <- cbind(rep(0, length(current_missings)),
-                             current_missings)
-      } else {
-        old_offsets <- cbind(liste[[i]][current_missings], current_missings)
-      }
-      
-      new_offsets <- rbind(calculated_offsets, old_offsets)
-      # bring everything into the correct order
-      index_sorting <- order(new_offsets[, 2])
-      new_offsets <- new_offsets[index_sorting, 1]
-    }
     new_offsets <- calculate_offsets(current_missings = current_missings,
                                      current_observations = current_observations,
                                      mcontrol = mcontrol,
