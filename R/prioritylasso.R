@@ -353,7 +353,9 @@ prioritylasso <- function(X,
                                      mcontrol = mcontrol,
                                      current_block = 1,
                                      pred = pred,
-                                     liste = liste)
+                                     liste = liste,
+                                     X = X,
+                                     blocks = blocks)
     liste[[2]] <- new_offsets
     lassoerg <- list(block1erg)
     coeff[[1]] <- block1erg$coefficients
@@ -470,7 +472,9 @@ prioritylasso <- function(X,
                                      mcontrol = mcontrol,
                                      current_block = i,
                                      pred = pred,
-                                     liste = liste)
+                                     liste = liste,
+                                     X = X,
+                                     blocks = blocks)
     liste[[i+1]] <- new_offsets
     
     min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
