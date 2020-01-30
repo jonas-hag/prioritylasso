@@ -6,6 +6,7 @@
 \usage{
 missing.control(
   handle.missingdata = c("none", "ignore", "impute.offset"),
+  offset.firstblock = c("zero", "intercept"),
   impute.offset.cases = "complete.cases",
   nfolds.imputation = 10,
   lambda.imputation = c("lambda.min", "lambda.1se"),
@@ -14,6 +15,8 @@ missing.control(
 }
 \arguments{
 \item{handle.missingdata}{how blockwise missing data should be treated. Default is \code{none} which does nothing, \code{ignore} ignores the observations with missing data for the current block, \code{impute.offset} imputes the offset for the missing values.}
+
+\item{offset.firstblock}{determines if the offset of the first block for missing observations is zero or the intercept of the observed values for \code{handle.missingdata = ignore}}
 
 \item{impute.offset.cases}{which cases should be used for the imputation model to impute missing offsets. So far, only complete cases are supported}
 

@@ -8,8 +8,9 @@
 #' @param liste list with offsets
 #' @param X original data
 #' @param blocks information which variable belongs to which block
+#' @param current_intercept the intercept estimated for the current block
 #'
-#' @return vector of offsets
+#' @return list with offsets and used imputation model (if applicable)
 calculate_offsets <- function(current_missings,
                               current_observations,
                               mcontrol,
@@ -17,11 +18,11 @@ calculate_offsets <- function(current_missings,
                               pred,
                               liste,
                               X,
-                              blocks) {
+                              blocks,
+                              current_intercept) {
   
   # store the results for the current block
   # calculate the new offsets
-  browser()
   imputation_model <- NULL
   if (is.null(current_missings)) {
     new_offsets <- as.matrix(pred)
@@ -35,8 +36,14 @@ calculate_offsets <- function(current_missings,
       # if the missings are in the first block, use 0 as offset
       #JH -> needs further clarifaction
       if (current_block == 1) {
+        if (mcontrol$offset.firstblock == "zero") {
         missing_offsets <- cbind(rep(0, length(current_missings)),
                                  current_missings)
+        } else {
+          missing_offsets <- cbind(rep(current_intercept,
+                                       length(current_missings)),
+                                   current_missings)
+        }
       } else {
         missing_offsets <- cbind(liste[[current_block]][current_missings],
                                  current_missings)

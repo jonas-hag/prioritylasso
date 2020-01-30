@@ -40,6 +40,7 @@
 #' @param cvoffset logical, whether CV should be used to estimate the offsets. Default is FALSE.
 #' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
 #' @param mcontrol controls how to deal with blockwise missing data. For details see below or \code{missing.control}
+#' @param scale.y determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}
 #' @param ... other arguments that can be passed to the function \code{cv.glmnet}.
 #'
 #' @return object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block.
@@ -57,6 +58,7 @@
 #' \item{\code{X}}{the original data used for the calculation}
 #' \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
 #' \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
+#' \item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
 #' }
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
@@ -69,7 +71,7 @@
 #' @import glmnet
 #' @import survival
 #' @import utils
-#' @importFrom checkmate assert_class
+#' @importFrom checkmate assert_class assert_logical
 #' @examples
 #' # gaussian
 #'   prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian",
@@ -120,6 +122,7 @@ prioritylasso <- function(X,
                           cvoffset = FALSE,
                           cvoffsetnfolds = 10,
                           mcontrol = missing.control(),
+                          scale.y = FALSE,
                           ...){
   
   
@@ -222,13 +225,12 @@ prioritylasso <- function(X,
     foldid <- NULL
     warning(paste0("For handle.missingdata = ", mcontrol$handle.missingdata, ", the foldids of the observations are chosen individually for every block and not set globally. foldid is set to NULL"))
   }
-  
-  if (mcontrol$handle.missingdata == "impute_offset" &&
+  if (mcontrol$handle.missingdata == "impute.offset" &&
       mcontrol$impute.offset.cases == "complete.cases") {
     # calculate fraction of complete cases
-    perc_complete_cases <- nrow(complete.cases(X)) / nrow(X)
+    perc_complete_cases <- sum(complete.cases(X)) / nrow(X)
     
-    if (nrow(complete.cases(X)) == 0) {
+    if (sum(complete.cases(X)) == 0) {
       stop("The dataset contains no complete cases (over all blocks). Imputation of the offsets not possible.")
     }
     if (perc_complete_cases < mcontrol$perc.comp.cases.warning) {
@@ -242,12 +244,33 @@ prioritylasso <- function(X,
     for (i in seq_along(blocks)) {
       missing_index_overview[, i] <- !complete.cases(X[, blocks[[i]]])
     }
-    for (i in seq_along(nrow(missing_index_overview))) {
+    for (i in seq_len(nrow(missing_index_overview))) {
       if (sum(missing_index_overview[i, ]) > 1) {
         stop("For impute.offset.cases = 'complete.cases', every observation must only contain one missing block.")
       }
     }
     
+  }
+  
+  # cox models don't fit an intercept, therefore offset.firstblock = "intercept"
+  # can't be used
+  if (mcontrol$handle.missingdata == "ignore" &&
+      mcontrol$offset.firstblock == "intercept" &&
+      family == "cox") {
+    stop("offset.firstblock = 'intercept' can't be used with family = 'cox' as cox models don't fit an intercept")
+  }
+  
+  assert_logical(scale.y)
+  if (scale.y && family != "gaussian") {
+    stop("scale.y = TRUE can only be used with family = 'gaussian'")
+  }
+  
+  # determine if y gets scaled; if yes store the parameters
+  if (scale.y) {
+    Y <- scale(Y)
+    y.scale.param <- list(mean = mean(Y), sd = sd(Y))
+  } else {
+    y.scale.param <- NULL
   }
   
   
@@ -357,7 +380,8 @@ prioritylasso <- function(X,
                                      pred = pred,
                                      liste = liste,
                                      X = X,
-                                     blocks = blocks)
+                                     blocks = blocks,
+                                     current_intercept = coef(block1erg)[1])
     liste[[2]] <- result_offsets[["new_offsets"]]
     imputation_models[[1]] <- result_offsets[["imputation_model"]]
     lassoerg <- list(block1erg)
@@ -477,7 +501,9 @@ prioritylasso <- function(X,
                                      pred = pred,
                                      liste = liste,
                                      X = X,
-                                     blocks = blocks)
+                                     blocks = blocks,
+                                     current_intercept =
+                                       lassoerg[[i]]$glmnet.fit$a0[lambda.ind[[i]]])
     liste[[i+1]] <- result_offsets[["new_offsets"]]
     imputation_models[[i]] <- result_offsets[["imputation_model"]]
     
@@ -509,7 +535,8 @@ prioritylasso <- function(X,
                     call = match.call(),
                     X = X,
                     missing.data = missing.data,
-                    imputation.models = imputation_models)
+                    imputation.models = imputation_models,
+                    y.scale.param = y.scale.param)
   
   class(finallist) <- c("prioritylasso", class(finallist))
   return(finallist)

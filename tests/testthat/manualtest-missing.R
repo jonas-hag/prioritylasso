@@ -266,3 +266,84 @@ pl_m10b <- prioritylasso(X = x_m10,
                         standardize = TRUE,
                         nfolds = 5,
                         handle.missingdata = "ignore")
+
+set.seed(4973)
+# generate test data with different variances (and mean)
+train_data <- cbind(matrix(rnorm(200 * 50), nrow = 200, ncol = 50),
+                    matrix(rnorm(200 * 50), nrow = 200, ncol = 50),
+                    matrix(rnorm(200 * 50), nrow = 200, ncol = 50))
+# take the first variables (of each sd version) to have an influence on the
+# outcome
+train_y <- train_data[, c(1:2)] %*%
+  matrix(c(10, -9), ncol = 1) +
+  train_data[, 51:60] %*%
+  matrix(c(1, -1, 2, -2, 2.5, 1.5, -1.5, 6, -2, 3), ncol = 1) +
+  train_data[, c(101:105)] %*%
+  matrix(c(0.5, 2, -4.8, 2, 7), ncol = 1) +
+  matrix(rnorm(200), ncol = 1)
+
+# delete some covariables
+train_data[1:10, 1:50] <- NA
+train_data[11:20, 51:100] <- NA
+train_data[21:30, 101:150] <- NA
+
+set.seed(1234)
+pl_m11 <- prioritylasso(X = train_data,
+                        Y = train_y,
+                        family = "gaussian",
+                        type.measure = "mse",
+                        blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
+                        block1.penalization = TRUE,
+                        lambda.type = "lambda.1se",
+                        standardize = TRUE,
+                        nfolds = 5,
+                        mcontrol = missing.control(handle.missingdata = "impute.offset"))
+
+# this should produce an error
+train_data_2 <- train_data
+train_data_2[11:20, 101:150] <- NA
+pl_m11b <- prioritylasso(X = train_data_2,
+                        Y = train_y,
+                        family = "gaussian",
+                        type.measure = "mse",
+                        blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
+                        block1.penalization = TRUE,
+                        lambda.type = "lambda.1se",
+                        standardize = TRUE,
+                        nfolds = 5,
+                        mcontrol = missing.control(handle.missingdata = "impute.offset"))
+
+################################################################################
+# test use of 0 or intercept for handle.missingdata = ignore
+pl_m12 <- prioritylasso(X = train_data,
+                        Y = train_y,
+                        family = "gaussian",
+                        type.measure = "mse",
+                        blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
+                        block1.penalization = TRUE,
+                        lambda.type = "lambda.1se",
+                        standardize = TRUE,
+                        nfolds = 5,
+                        mcontrol = missing.control(handle.missingdata = "ignore"))
+pl_m12b <- prioritylasso(X = train_data,
+                        Y = train_y,
+                        family = "gaussian",
+                        type.measure = "mse",
+                        blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
+                        block1.penalization = FALSE,
+                        lambda.type = "lambda.1se",
+                        standardize = TRUE,
+                        nfolds = 5,
+                        mcontrol = missing.control(handle.missingdata = "ignore",
+                                                   offset.firstblock = "intercept"))
+pl_m12c <- prioritylasso(X = train_data,
+                         Y = train_y,
+                         family = "gaussian",
+                         type.measure = "mse",
+                         blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
+                         block1.penalization = TRUE,
+                         lambda.type = "lambda.1se",
+                         standardize = TRUE,
+                         nfolds = 5,
+                         mcontrol = missing.control(handle.missingdata = "ignore",
+                                                    offset.firstblock = "intercept"))

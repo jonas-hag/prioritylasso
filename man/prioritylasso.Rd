@@ -20,6 +20,7 @@ prioritylasso(
   cvoffset = FALSE,
   cvoffsetnfolds = 10,
   mcontrol = missing.control(),
+  scale.y = FALSE,
   ...
 )
 }
@@ -54,6 +55,8 @@ prioritylasso(
 
 \item{mcontrol}{controls how to deal with blockwise missing data. For details see below or \code{missing.control}}
 
+\item{scale.y}{determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}}
+
 \item{...}{other arguments that can be passed to the function \code{cv.glmnet}.}
 }
 \value{
@@ -72,6 +75,7 @@ object of class \code{prioritylasso} with the following elements. If these eleme
 \item{\code{X}}{the original data used for the calculation}
 \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
 \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
+\item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
 }
 }
 \description{

@@ -1,6 +1,7 @@
 #' Construct control structures for handling of missing data for \code{prioritylasso}
 #'
 #' @param handle.missingdata how blockwise missing data should be treated. Default is \code{none} which does nothing, \code{ignore} ignores the observations with missing data for the current block, \code{impute.offset} imputes the offset for the missing values.
+#' @param offset.firstblock determines if the offset of the first block for missing observations is zero or the intercept of the observed values for \code{handle.missingdata = ignore}
 #' @param impute.offset.cases which cases should be used for the imputation model to impute missing offsets. So far, only complete cases are supported
 #' @param nfolds.imputation nfolds for the glmnet of the imputation model
 #' @param lambda.imputation which lambda-value should be used for predicting the imputed offsets in cv.glmnet
@@ -11,18 +12,21 @@
 #' @importFrom checkmate assert_numeric assert_number
 missing.control <- function(handle.missingdata = c("none", "ignore",
                                                    "impute.offset"),
+                            offset.firstblock = c("zero", "intercept"),
                             impute.offset.cases = "complete.cases",
                             nfolds.imputation = 10,
                             lambda.imputation = c("lambda.min", "lambda.1se"),
                             perc.comp.cases.warning = 0.3) {
   
   handle.missingdata <- match.arg(handle.missingdata)
+  offset.firstblock <- match.arg(offset.firstblock)
   impute.offset.cases <- match.arg(impute.offset.cases)
   assert_number(nfolds.imputation, lower = 3)
   lambda.imputation <- match.arg(lambda.imputation)
   assert_numeric(perc.comp.cases.warning, lower = 0, upper = 1, max.len = 1)
   
   result <- list(handle.missingdata = handle.missingdata,
+                 offset.firstblock = offset.firstblock,
                  impute.offset.cases = impute.offset.cases,
                  nfolds.imputation = nfolds.imputation,
                  lambda.imputation = lambda.imputation,

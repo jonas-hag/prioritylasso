@@ -12,7 +12,8 @@ calculate_offsets(
   pred,
   liste,
   X,
-  blocks
+  blocks,
+  current_intercept
 )
 }
 \arguments{
@@ -31,9 +32,11 @@ calculate_offsets(
 \item{X}{original data}
 
 \item{blocks}{information which variable belongs to which block}
+
+\item{current_intercept}{the intercept estimated for the current block}
 }
 \value{
-vector of offsets
+list with offsets and used imputation model (if applicable)
 }
 \description{
 Calculates the offsets for the current block
