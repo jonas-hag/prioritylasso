@@ -56,6 +56,7 @@
 #' \item{\code{call}}{the function call.}
 #' \item{\code{X}}{the original data used for the calculation}
 #' \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
+#' \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
 #' }
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
@@ -243,7 +244,7 @@ prioritylasso <- function(X,
     }
     for (i in seq_along(nrow(missing_index_overview))) {
       if (sum(missing_index_overview[i, ]) > 1) {
-        stop("For impute.offset.cases = 'complete.cases', every observation must only contain one missing block. ")
+        stop("For impute.offset.cases = 'complete.cases', every observation must only contain one missing block.")
       }
     }
     
@@ -279,6 +280,7 @@ prioritylasso <- function(X,
   coeff <- list()
   lassoerg <- list()
   liste <- list(NULL)
+  imputation_models <- list()
   # list for every block, if TRUE the value is missing for this block
   missing.data <- list()
   start_block <- 1
@@ -348,7 +350,7 @@ prioritylasso <- function(X,
     #JH change here or add check to forbid missing data in first block until
     # further clarification
     # calculate the new offsets
-    new_offsets <- calculate_offsets(current_missings = current_missings,
+    result_offsets <- calculate_offsets(current_missings = current_missings,
                                      current_observations = current_observations,
                                      mcontrol = mcontrol,
                                      current_block = 1,
@@ -356,7 +358,8 @@ prioritylasso <- function(X,
                                      liste = liste,
                                      X = X,
                                      blocks = blocks)
-    liste[[2]] <- new_offsets
+    liste[[2]] <- result_offsets[["new_offsets"]]
+    imputation_models[[1]] <- result_offsets[["imputation_model"]]
     lassoerg <- list(block1erg)
     coeff[[1]] <- block1erg$coefficients
   } else {
@@ -467,7 +470,7 @@ prioritylasso <- function(X,
     
     # store the results for the current block
     # calculate the new offsets
-    new_offsets <- calculate_offsets(current_missings = current_missings,
+    result_offsets <- calculate_offsets(current_missings = current_missings,
                                      current_observations = current_observations,
                                      mcontrol = mcontrol,
                                      current_block = i,
@@ -475,7 +478,8 @@ prioritylasso <- function(X,
                                      liste = liste,
                                      X = X,
                                      blocks = blocks)
-    liste[[i+1]] <- new_offsets
+    liste[[i+1]] <- result_offsets[["new_offsets"]]
+    imputation_models[[i]] <- result_offsets[["imputation_model"]]
     
     min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
     nzero[i] <- lassoerg[[i]]$nzero[lambda.ind[[i]]]
@@ -485,6 +489,10 @@ prioritylasso <- function(X,
   
   
   name <- lassoerg[[i]]$name
+  
+  if (mcontrol$handle.missingdata != "impute.offsets") {
+    imputation_models <- NULL
+  }
   
   
   
@@ -500,7 +508,8 @@ prioritylasso <- function(X,
                     coefficients = unlist(coeff),
                     call = match.call(),
                     X = X,
-                    missing.data = missing.data)
+                    missing.data = missing.data,
+                    imputation.models = imputation_models)
   
   class(finallist) <- c("prioritylasso", class(finallist))
   return(finallist)

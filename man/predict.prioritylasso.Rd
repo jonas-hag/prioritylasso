@@ -4,8 +4,13 @@
 \alias{predict.prioritylasso}
 \title{Predictions from prioritylasso}
 \usage{
-\method{predict}{prioritylasso}(object, newdata, type = c("link",
-  "response"), ...)
+\method{predict}{prioritylasso}(
+  object,
+  newdata = NULL,
+  type = c("link", "response"),
+  handle.missingdata = c("none", "ignore"),
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{prioritylasso}.}
@@ -14,6 +19,8 @@
 
 \item{type}{Specifies the type of predictions. \code{link} gives the linear predictors for all types of response and \code{response} gives the fitted values.}
 
+\item{handle.missingdata}{Specifies how to deal with missing data.}
+
 \item{...}{Further arguments passed to or from other methods.}
 }
 \value{
@@ -21,6 +28,11 @@ Predictions that depend on \code{type}.
 }
 \description{
 Makes predictions for a \code{prioritylasso} object. It can be chosen between linear predictors or fitted values.
+}
+\details{
+\code{handle.missingdata} specifies how to deal with missing data.
+The default \code{none} cannot handle missing data, \code{ignore} leaves out
+the missing data for the calculation of the prediction.
 }
 \examples{
 pl_bin <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(50,1,0.5),

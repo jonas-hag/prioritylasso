@@ -22,6 +22,7 @@ calculate_offsets <- function(current_missings,
   # store the results for the current block
   # calculate the new offsets
   browser()
+  imputation_model <- NULL
   if (is.null(current_missings)) {
     new_offsets <- as.matrix(pred)
   } else {
@@ -34,15 +35,15 @@ calculate_offsets <- function(current_missings,
       # if the missings are in the first block, use 0 as offset
       #JH -> needs further clarifaction
       if (current_block == 1) {
-        old_offsets <- cbind(rep(0, length(current_missings)),
-                             current_missings)
+        missing_offsets <- cbind(rep(0, length(current_missings)),
+                                 current_missings)
       } else {
-        old_offsets <- cbind(liste[[current_block]][current_missings],
-                             current_missings)
+        missing_offsets <- cbind(liste[[current_block]][current_missings],
+                                 current_missings)
       }
     }
     # if chosen impute the missing offsets
-    if (mcontrol$handle.missingdata == "impute") {
+    if (mcontrol$handle.missingdata == "impute.offset") {
       if (mcontrol$impute.offset.cases == "complete.cases") {
         # get the x values for the imputation
         x_values <- cbind(X, 1:nrow(X))
@@ -57,27 +58,47 @@ calculate_offsets <- function(current_missings,
         # over all blocks
         y_values_index <- as.vector(calculated_offsets[, 2]) %in%
           as.vector(x_values[, ncol(x_values)])
+        y_values_index_num <- calculated_offsets[y_values_index, 2]
         y_values <- calculated_offsets[y_values_index, 1]
         
         # check that the indices of the x and y values are the same
-        if (!all.equal(y_values_index, x_values[, ncol(x_values)])) {
+        if (!all.equal(y_values_index_num, x_values[, ncol(x_values)])) {
           stop("Mismatch of covariates and offsets in imputation model for complete cases")
         }
         # delete the index column
         x_values <- x_values[, -ncol(x_values)]
       }
       
-      # perform the imputation
-      imputation_model <- cv.glmnet(x = x_values,
-                                    y = y_values,
-                                    nfolds = mcontrol$nfolds.imputation)
+      # check if the offsets (y_values) are all equal. If yes, an imputation
+      # model is not possible; instead use the constant offset also for the rest
+      # of the imputations
+      if (sum(diff(y_values) == 0) == length(y_values)) {
+        warning("The offsets calculated for the current block are all equal. An imputation model is not possible, instead the value of the calculated offsets is used as the imputed value.")
+        imputation_model <- mean(y_values)
+        missing_offsets <- rep(mean(y_values), times = length(current_missings))
+      } else {
+        # perform the imputation
+        imputation_model <- cv.glmnet(x = x_values,
+                                      y = y_values,
+                                      nfolds = mcontrol$nfolds.imputation)
+        
+        # predict the missing offsets
+        missing_offsets <- predict(imputation_model,
+                                   newx = X[current_missings,
+                                            -blocks[[current_block]]],
+                                   s = mcontrol$lambda.imputation)
+      }
+      
+      # add the observation index
+      missing_offsets <- cbind(missing_offsets, current_missings)
     }
-    new_offsets <- rbind(calculated_offsets, old_offsets)
+    new_offsets <- rbind(calculated_offsets, missing_offsets)
     # bring everything into the correct order
     index_sorting <- order(new_offsets[, 2])
     new_offsets <- new_offsets[index_sorting, 1]
   }
   
-  # return the vector of the complete offsets
-  new_offsets
+  # return the complete offsets and the imputation model
+  list(new_offsets = new_offsets,
+       imputation_model = imputation_model)
 }

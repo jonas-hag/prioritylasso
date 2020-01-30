@@ -2,8 +2,12 @@
 
 S3method(predict,prioritylasso)
 export(cvm_prioritylasso)
+export(missing.control)
 export(prioritylasso)
 import(glmnet)
 import(stats)
 import(survival)
 import(utils)
+importFrom(checkmate,assert_class)
+importFrom(checkmate,assert_number)
+importFrom(checkmate,assert_numeric)

@@ -4,10 +4,24 @@
 \alias{prioritylasso}
 \title{Patient outcome prediction based on multi-omics data taking practitioners' preferences into account}
 \usage{
-prioritylasso(X, Y, weights, family, type.measure, blocks,
-  max.coef = NULL, block1.penalization = TRUE,
-  lambda.type = "lambda.min", standardize = TRUE, nfolds = 10,
-  foldid, cvoffset = FALSE, cvoffsetnfolds = 10, ...)
+prioritylasso(
+  X,
+  Y,
+  weights,
+  family = c("gaussian", "binomial", "cox"),
+  type.measure,
+  blocks,
+  max.coef = NULL,
+  block1.penalization = TRUE,
+  lambda.type = "lambda.min",
+  standardize = TRUE,
+  nfolds = 10,
+  foldid,
+  cvoffset = FALSE,
+  cvoffsetnfolds = 10,
+  mcontrol = missing.control(),
+  ...
+)
 }
 \arguments{
 \item{X}{a (nxp) matrix of predictors with observations in rows and predictors in columns.}
@@ -38,6 +52,8 @@ prioritylasso(X, Y, weights, family, type.measure, blocks,
 
 \item{cvoffsetnfolds}{the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.}
 
+\item{mcontrol}{controls how to deal with blockwise missing data. For details see below or \code{missing.control}}
+
 \item{...}{other arguments that can be passed to the function \code{cv.glmnet}.}
 }
 \value{
@@ -53,6 +69,9 @@ object of class \code{prioritylasso} with the following elements. If these eleme
 \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object corresponding to \code{best.blocks}.}
 \item{\code{coefficients}}{vector of estimated coefficients. If \code{block1.penalization = FALSE} and \code{family = gaussian} or \code{binomial}, the first entry contains an intercept.}
 \item{\code{call}}{the function call.}
+\item{\code{X}}{the original data used for the calculation}
+\item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
+\item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
 }
 }
 \description{
@@ -67,6 +86,20 @@ This is either a generalized linear model for family "gaussian" or "binomial", o
 The first entry of \code{blocks} contains the indices of variables of the block with priority 1 (first block included in the model).
 Assume that \code{blocks = list(1:100, 101:200, 201:300)} then the block with priority 1 consists of the first 100 variables of the data matrix.
 Analogously, the block with priority 2 consists of the variables 101 to 200 and the block with priority 3 of the variables 201 to 300.
+
+\code{standardize = TRUE} leads to a standardisation of the covariables (\code{X}) in \code{glmnet} which is recommend by \code{glmnet}.
+In case of an unpenalized first block, the covariables for the first block are not standardized.
+Please note that the returned coefficients are rescaled to the original scale of the covariates as provided in \code{X}.
+Therefore, new data in \code{predict.prioritylasso} should be on the same scale as \code{X}.
+
+To use the method with blockwise missing data, one can set \code{handle.missingdata = ignore}.
+Then, to calculate the coefficients for a given block only the observations with values for this blocks are used.
+For the observations with missing values, the result from the previous block is used as the offset for the next block.
+Crossvalidated offsets are not supported with \code{handle.missingdata = ignore}.
+Please note that dealing with single missing values is not supported.
+If only one value in a block for one observation is missing, still the complete observation for this block is treated as missing.
+Normally, every observation gets a unique foldid which stays the same across all blocks for the call to \code{cv.glmnet}.
+However when \code{handle.missingdata != none}, the foldid is set new for every block.
 }
 \note{
 The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.

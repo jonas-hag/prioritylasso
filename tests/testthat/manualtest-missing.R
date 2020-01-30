@@ -12,7 +12,7 @@ pl_m1 <- prioritylasso(X = x_m1,
                       standardize = TRUE,
                       nfolds = 5,
                       # handle.missingdata = "ignore")
-                      mcontrol = missing.control(handle.missingdata = "ignore"))
+                      mcontrol = missing.control(handle.missingdata = "impute.offset"))
 
 set.seed(1234)
 pl_m1b <- prioritylasso(X = x_m1,

@@ -9,7 +9,7 @@ Depends: R (>= 2.10.0)
 License: GPL-2
 LazyData: TRUE
 Imports: survival, glmnet, utils
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Suggests: testthat, knitr, rmarkdown, pROC
 VignetteBuilder: knitr
 NeedsCompilation: no
