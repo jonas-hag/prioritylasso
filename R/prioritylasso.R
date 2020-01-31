@@ -21,7 +21,6 @@
 #' For the observations with missing values, the result from the previous block is used as the offset for the next block.
 #' Crossvalidated offsets are not supported with \code{handle.missingdata = ignore}.
 #' Please note that dealing with single missing values is not supported.
-#' If only one value in a block for one observation is missing, still the complete observation for this block is treated as missing.
 #' Normally, every observation gets a unique foldid which stays the same across all blocks for the call to \code{cv.glmnet}.
 #' However when \code{handle.missingdata != none}, the foldid is set new for every block.
 #'
@@ -59,6 +58,7 @@
 #' \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
 #' \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
 #' \item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
+#' \item{\code{blocks}}{list with the description which variables belong to which block}
 #' }
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
@@ -272,6 +272,16 @@ prioritylasso <- function(X,
   } else {
     y.scale.param <- NULL
   }
+  
+  # check that there are no single missing values
+  lapply(blocks, function(block) {
+    lapply(seq_len(nrow(X)), function(i) {
+      if (sum(is.na(X[i, block])) != 0 &&
+          sum(is.na(X[i, block])) != length(block)) {
+        stop(paste0("Observation ", i, " contains a single missing value. This is not supported."))
+      }
+    })
+  })
   
   
   
@@ -536,7 +546,8 @@ prioritylasso <- function(X,
                     X = X,
                     missing.data = missing.data,
                     imputation.models = imputation_models,
-                    y.scale.param = y.scale.param)
+                    y.scale.param = y.scale.param,
+                    blocks = blocks)
   
   class(finallist) <- c("prioritylasso", class(finallist))
   return(finallist)

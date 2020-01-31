@@ -24,7 +24,10 @@ calculate_offsets <- function(current_missings,
   # store the results for the current block
   # calculate the new offsets
   imputation_model <- NULL
-  if (is.null(current_missings)) {
+  # for handle.missingdata = impute.offset, an imputation model has to be
+  # calculated always, even if there are no missing values
+  if (is.null(current_missings) &&
+      mcontrol$handle.missingdata != "impute.offset") {
     new_offsets <- as.matrix(pred)
   } else {
     # the calculated offsets for this block where there are observations
@@ -37,8 +40,8 @@ calculate_offsets <- function(current_missings,
       #JH -> needs further clarifaction
       if (current_block == 1) {
         if (mcontrol$offset.firstblock == "zero") {
-        missing_offsets <- cbind(rep(0, length(current_missings)),
-                                 current_missings)
+          missing_offsets <- cbind(rep(0, length(current_missings)),
+                                   current_missings)
         } else {
           missing_offsets <- cbind(rep(current_intercept,
                                        length(current_missings)),
@@ -85,21 +88,30 @@ calculate_offsets <- function(current_missings,
         missing_offsets <- rep(mean(y_values), times = length(current_missings))
       } else {
         # perform the imputation
+        # if handle.missingdata = impute.offset, the imputation model has to be
+        # generated always (even if there are no missing values), as it is
+        # needed for the test data where this block could be missing
         imputation_model <- cv.glmnet(x = x_values,
                                       y = y_values,
                                       nfolds = mcontrol$nfolds.imputation)
         
         # predict the missing offsets
-        missing_offsets <- predict(imputation_model,
-                                   newx = X[current_missings,
-                                            -blocks[[current_block]]],
-                                   s = mcontrol$lambda.imputation)
+        if (!is.null(current_missings)) {
+          missing_offsets <- predict(imputation_model,
+                                     newx = X[current_missings,
+                                              -blocks[[current_block]]],
+                                     s = mcontrol$lambda.imputation)
+        }
       }
       
       # add the observation index
       missing_offsets <- cbind(missing_offsets, current_missings)
     }
-    new_offsets <- rbind(calculated_offsets, missing_offsets)
+    if (is.null(current_missings)) {
+      new_offsets <- calculated_offsets
+    } else {
+      new_offsets <- rbind(calculated_offsets, missing_offsets)
+    }
     # bring everything into the correct order
     index_sorting <- order(new_offsets[, 2])
     new_offsets <- new_offsets[index_sorting, 1]

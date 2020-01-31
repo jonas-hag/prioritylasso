@@ -8,7 +8,8 @@
   object,
   newdata = NULL,
   type = c("link", "response"),
-  handle.missingdata = c("none", "ignore"),
+  handle.missingtestdata = c("none", "set.zero", "impute.block"),
+  include.allintercepts = FALSE,
   ...
 )
 }
@@ -19,7 +20,9 @@
 
 \item{type}{Specifies the type of predictions. \code{link} gives the linear predictors for all types of response and \code{response} gives the fitted values.}
 
-\item{handle.missingdata}{Specifies how to deal with missing data.}
+\item{handle.missingtestdata}{Specifies how to deal with missing data in the test data}
+
+\item{include.allintercepts}{should the intercepts from all blocks included in the prediction? If \code{FALSE}, only the intercept from the first block is included (default in the past).}
 
 \item{...}{Further arguments passed to or from other methods.}
 }
@@ -30,9 +33,9 @@ Predictions that depend on \code{type}.
 Makes predictions for a \code{prioritylasso} object. It can be chosen between linear predictors or fitted values.
 }
 \details{
-\code{handle.missingdata} specifies how to deal with missing data.
-The default \code{none} cannot handle missing data, \code{ignore} leaves out
-the missing data for the calculation of the prediction.
+\code{handle.missingtestdata} specifies how to deal with missing data.
+The default \code{none} cannot handle missing data, \code{set.zero} leaves out
+the missing data for the calculation of the prediction (the missing value is set to zero).
 }
 \examples{
 pl_bin <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(50,1,0.5),
