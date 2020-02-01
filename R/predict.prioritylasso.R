@@ -114,12 +114,12 @@ predict.prioritylasso <- function(object,
   
   # generate vector with intercepts of the different blocks
   # cox model does not have intercepts
-  if (object$family == "cox") {
+  if (object$call$family == "cox") {
     intercepts <- rep(0, times = length(object$blocks))
   } else {
     # unpenalized first block
-    if (is.null(object$block1unpen)) {
-      intercepts <- object$coefficiens[1]
+    if (!is.null(object$block1unpen)) {
+      intercepts <- object$coefficients[1]
       for (i in 2:length(object$glmnet.fit)) {
         intercepts[i] <- object$glmnet.fit[[i]]$a0[object$lambda.ind[[i]]]
       }
