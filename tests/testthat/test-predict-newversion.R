@@ -1,5 +1,8 @@
 # compare the current predict.prioritylasso version with the results from the
 # CRAN version
+# pl3 and pl3a are excluded because in the original prioritylasso function,
+# an error was fixed, so the result is now different (use correct family for
+# unpenalized first block and cvoffset)
 set.seed(1234)
 x_data <- matrix(rnorm(50*500),50,500)
 pl1a <- prioritylasso(X = x_data, Y = rnorm(50), family = "gaussian", type.measure = "mse",
@@ -43,19 +46,7 @@ pl2b <- prioritylasso(X = x_data, Y = rnorm(50), family = "gaussian", type.measu
                       cvoffset = TRUE)
 pred_pl2b <- predict(pl2b, newdata = x_data, type = "response")
 
-set.seed(1234)
-pl3 <- prioritylasso(X = x_data, Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
-                     type.measure = "class", blocks = list(block1=1:15, block2=16:200, block3=201:500),
-                     block1.penalization = FALSE, standardize = TRUE, nfolds = 5,
-                     cvoffset = TRUE)
-pred_pl3 <- predict(pl3, newdata = x_data, type = "response")
 
-set.seed(1234)
-pl3a <- prioritylasso(X = x_data, Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
-                      type.measure = "auc", blocks = list(block1=1:15, block2=16:200, block3=201:500),
-                      block1.penalization = FALSE, standardize = TRUE, nfolds = 4,
-                      cvoffset = TRUE)
-pred_pl3a <- predict(pl3a, newdata = x_data, type = "response")
 
 set.seed(1234)
 pl3b <- prioritylasso(X = x_data, Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
@@ -113,8 +104,6 @@ pred_pl1b_cran <- readRDS(paste0(path, "pred_pl1b_cran.rds"))
 pred_pl2_cran <- readRDS(paste0(path, "pred_pl2_cran.rds"))
 pred_pl2a_cran <- readRDS(paste0(path, "pred_pl2a_cran.rds"))
 pred_pl2b_cran <- readRDS(paste0(path, "pred_pl2b_cran.rds"))
-pred_pl3_cran <- readRDS(paste0(path, "pred_pl3_cran.rds"))
-pred_pl3a_cran <- readRDS(paste0(path, "pred_pl3a_cran.rds"))
 pred_pl3b_cran <- readRDS(paste0(path, "pred_pl3b_cran.rds"))
 pred_pl4_cran <- readRDS(paste0(path, "pred_pl4_cran.rds"))
 pred_pl5a_cran <- readRDS(paste0(path, "pred_pl5a_cran.rds"))
@@ -132,8 +121,6 @@ test_that("the further developed predict.prioritylasso leads to the same results
   expect_equal(pred_pl2, pred_pl2_cran)
   expect_equal(pred_pl2a, pred_pl2a_cran)
   expect_equal(pred_pl2b, pred_pl2b_cran)
-  expect_equal(pred_pl3, pred_pl3_cran)
-  expect_equal(pred_pl3a, pred_pl3a_cran)
   expect_equal(pred_pl3b, pred_pl3b_cran)
   expect_equal(pred_pl4, pred_pl4_cran)
   expect_equal(pred_pl5a, pred_pl5a_cran)

@@ -33,6 +33,7 @@ calculate_offsets <- function(current_missings,
     # the calculated offsets for this block where there are observations
     calculated_offsets <- as.matrix(pred)
     calculated_offsets <- cbind(calculated_offsets, current_observations)
+    missing_offsets <- NULL
     # if chosen, ignore the missing block
     if (mcontrol$handle.missingdata == "ignore") {
       # for the missing values, take the offset from the previous block
@@ -85,7 +86,9 @@ calculate_offsets <- function(current_missings,
       if (sum(diff(y_values) == 0) == length(y_values)) {
         warning("The offsets calculated for the current block are all equal. An imputation model is not possible, instead the value of the calculated offsets is used as the imputed value.")
         imputation_model <- mean(y_values)
-        missing_offsets <- rep(mean(y_values), times = length(current_missings))
+        if (!is.null(current_missings)) {
+          missing_offsets <- rep(mean(y_values), times = length(current_missings))
+        }
       } else {
         # perform the imputation
         # if handle.missingdata = impute.offset, the imputation model has to be
@@ -105,7 +108,9 @@ calculate_offsets <- function(current_missings,
       }
       
       # add the observation index
-      missing_offsets <- cbind(missing_offsets, current_missings)
+      if (!is.null(missing_offsets)) {
+        missing_offsets <- cbind(missing_offsets, current_missings)
+      }
     }
     if (is.null(current_missings)) {
       new_offsets <- calculated_offsets

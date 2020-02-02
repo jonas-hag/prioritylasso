@@ -267,8 +267,8 @@ prioritylasso <- function(X,
   
   # determine if y gets scaled; if yes store the parameters
   if (scale.y) {
-    Y <- scale(Y)
     y.scale.param <- list(mean = mean(Y), sd = sd(Y))
+    Y <- scale(Y)
   } else {
     y.scale.param <- NULL
   }
@@ -526,7 +526,7 @@ prioritylasso <- function(X,
   
   name <- lassoerg[[i]]$name
   
-  if (mcontrol$handle.missingdata != "impute.offsets") {
+  if (mcontrol$handle.missingdata != "impute.offset") {
     imputation_models <- NULL
   }
   

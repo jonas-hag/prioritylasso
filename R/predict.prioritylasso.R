@@ -79,6 +79,12 @@ predict.prioritylasso <- function(object,
     }
   })
   
+  # check that if there are only complete cases, handle.missingtestdata = none
+  if (handle.missingtestdata != "none" &&
+      sum(complete.cases(newdata)) == nrow(newdata)) {
+    stop("The data consists only of complete cases. Please use handle.missingtestdata = 'none'.")
+  }
+  
   if (handle.missingtestdata == "impute.block") {
     # check that the prioritylasso object contains the imputation models
     if (object$call$mcontrol$handle.missingdata != "impute.offset" ||
@@ -90,9 +96,9 @@ predict.prioritylasso <- function(object,
     # there is only one missing block per observation
     # => maybe changed in the future if more flexible options are available
     missing_index_overview <- matrix(FALSE, nrow = nrow(newdata),
-                                     ncol = length(blocks))
-    for (i in seq_along(blocks)) {
-      missing_index_overview[, i] <- !complete.cases(newdata[, blocks[[i]]])
+                                     ncol = length(object$blocks))
+    for (i in seq_along(object$blocks)) {
+      missing_index_overview[, i] <- !complete.cases(newdata[, object$blocks[[i]]])
     }
     for (i in seq_len(nrow(missing_index_overview))) {
       if (sum(missing_index_overview[i, ]) > 1) {
@@ -147,11 +153,11 @@ predict.prioritylasso <- function(object,
   imputed_values <- rep(0, nrow(newdata))
   if (handle.missingtestdata == "impute.block") {
     # determine for which observation a block has to be imputed
-    # determine which block (or non -> NA) has to be imputed for every
+    # determine which block (or which not -> NA) has to be imputed for every
     # observation
     impute_which_block <- unlist(apply(missing_index_overview, 1, function(x) {
       res <- which(x)
-      if (length(x) == 0) {
+      if (length(res) == 0) {
         NA
       } else {
         res
@@ -177,7 +183,8 @@ predict.prioritylasso <- function(object,
       imputed_values[index_observation[i]] <-
         predict(object$imputation.models[[impute_which_block[i]]],
                 newx = newdata[index_observation[i],
-                               -object$blocks[[impute_which_block[i]]]],
+                               -object$blocks[[impute_which_block[i]]],
+                               drop = FALSE],
                 s = use_lambda)
     }
     
