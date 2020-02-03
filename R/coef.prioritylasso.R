@@ -1,3 +1,9 @@
+#' Extract coefficients from a prioritylasso object
+#'
+#' @param model 
+#'
+#' @return List with the coefficients and the intercepts
+#' @export
 coef.prioritylasso <- function(model) {
   if (!"prioritylasso" %in% class(model)) {
     stop("The model has to be of class prioritylasso.")
