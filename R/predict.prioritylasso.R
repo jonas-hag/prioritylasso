@@ -53,7 +53,7 @@ predict.prioritylasso <- function(object,
     newdata <- data.matrix(newdata)
   }
   
-  if (nrow(newdata) != nrow(object$X)) {
+  if (ncol(newdata) != ncol(object$X)) {
     stop("The newdata does not have the same number of covariates as the traindata in the prioritylasso object.")
   }
   
