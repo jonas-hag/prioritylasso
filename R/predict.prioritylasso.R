@@ -174,20 +174,30 @@ predict.prioritylasso <- function(object,
     }
     
     # perform the imputations for the missing data
-    for (i in 1:length(index_observation)) {
-      if (is.null(object$call$mcontrol$lambda.imputation)) {
-        use_lambda <- missing.control()[["lambda.imputation"]]
-      } else {
-        use_lambda <- object$call$mcontrol$lambda.imputation
-      }
-      imputed_values[index_observation[i]] <-
-        predict(object$imputation.models[[impute_which_block[i]]],
-                newx = newdata[index_observation[i],
-                               -object$blocks[[impute_which_block[i]]],
-                               drop = FALSE],
-                s = use_lambda)
+    if (is.null(object$call$mcontrol$lambda.imputation)) {
+      use_lambda <- missing.control()[["lambda.imputation"]]
+    } else {
+      use_lambda <- object$call$mcontrol$lambda.imputation
     }
-    
+    for (i in 1:length(index_observation)) {
+      # check if a model exists or if it is just a constant
+      if (class(object$imputation.models[[impute_which_block[i]]]) == "cv.glmnet") {
+        imputed_values[index_observation[i]] <-
+          predict(object$imputation.models[[impute_which_block[i]]],
+                  newx = newdata[index_observation[i],
+                                 -object$blocks[[impute_which_block[i]]],
+                                 drop = FALSE],
+                  s = use_lambda)
+        
+      } else {
+        if (class(object$imputation.models[[impute_which_block[i]]]) == "numeric") {
+          imputed_values[index_observation[i]] <-
+            object$imputation.models[[impute_which_block[i]]]
+        } else {
+          imputed_values[index_observation[i]] <- NA 
+        }
+      }
+    }
   }
   
   # calculate the (several) intercept values for every observation

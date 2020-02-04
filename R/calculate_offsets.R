@@ -80,36 +80,60 @@ calculate_offsets <- function(current_missings,
         x_values <- x_values[, -ncol(x_values)]
       }
       
-      # check if the offsets (y_values) are all equal. If yes, an imputation
+      # if the offsets (y_values) are all equal, an imputation
       # model is not possible; instead use the constant offset also for the rest
       # of the imputations
-      if (sum(diff(y_values) == 0) == length(y_values)) {
-        warning("The offsets calculated for the current block are all equal. An imputation model is not possible, instead the value of the calculated offsets is used as the imputed value.")
-        imputation_model <- mean(y_values)
-        if (!is.null(current_missings)) {
-          missing_offsets <- rep(mean(y_values), times = length(current_missings))
-        }
-      } else {
-        # perform the imputation
-        # if handle.missingdata = impute.offset, the imputation model has to be
-        # generated always (even if there are no missing values), as it is
-        # needed for the test data where this block could be missing
+      results <- tryCatch({
         imputation_model <- cv.glmnet(x = x_values,
-                                      y = y_values,
-                                      nfolds = mcontrol$nfolds.imputation)
-        
-        # predict the missing offsets
+                  y = y_values,
+                  nfolds = mcontrol$nfolds.imputation)
         if (!is.null(current_missings)) {
           missing_offsets <- predict(imputation_model,
                                      newx = X[current_missings,
                                               -blocks[[current_block]]],
                                      s = mcontrol$lambda.imputation)
+          ret <- list(imputation_model = imputation_model,
+                      missing_offsets = missing_offsets)
+        } else {
+          ret <- list(imputation_model = imputation_model)
         }
-      }
+        ret
+
+      }, error = function(e) {
+        error_is_constant_issue <- grepl(
+          pattern = "y is constant; gaussian glmnet fails at standardization step",
+          x = e)
+        if (error_is_constant_issue) {
+          warning("The offsets calculated for the current block are all equal. An imputation model is not possible, instead the value of the calculated offsets is used as the imputed value.")
+          imputation_model <- mean(y_values)
+          if (!is.null(current_missings)) {
+            missing_offsets <- rep(mean(y_values),
+                                   times = length(current_missings))
+            ret <- list(imputation_model = imputation_model,
+                        misssing_offsets = missing_offsets)
+          } else {
+          ret <- list(imputation_model = imputation_model)
+          }
+        } else {
+          warning(paste0("An error in the imputation model for block ",
+                         current_block, " occured."))
+          imputation_model <- NULL
+          if (!is.null(current_missings)) {
+            missing_offsets <- rep(NA, times = length(current_missings))
+            ret <- list(imputation_model = imputation_model,
+                        missing_offsets = missing_offsets)
+          } else {
+          ret <- list(imputation_model = imputation_model)
+          }
+        }
+        ret
+      })
+
+      imputation_model <- results[["imputation_model"]]
       
       # add the observation index
       if (!is.null(missing_offsets)) {
-        missing_offsets <- cbind(missing_offsets, current_missings)
+        missing_offsets <- cbind(results[["missing_offsets"]], current_missings)
       }
     }
     if (is.null(current_missings)) {
