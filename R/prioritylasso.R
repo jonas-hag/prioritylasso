@@ -57,6 +57,7 @@
 #' \item{\code{X}}{the original data used for the calculation}
 #' \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
 #' \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
+#' \item{\code{blocks.used.for.imputation}}{if \code{handle.missingdata = "impute.offsets"}, it contains the blocks which were used for the imputation model for every block}
 #' \item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
 #' \item{\code{blocks}}{list with the description which variables belong to which block}
 #' }
@@ -314,6 +315,7 @@ prioritylasso <- function(X,
   lassoerg <- list()
   liste <- list(NULL)
   imputation_models <- list()
+  blocks_used_for_imputation <- list()
   # list for every block, if TRUE the value is missing for this block
   missing.data <- list()
   start_block <- 1
@@ -394,6 +396,8 @@ prioritylasso <- function(X,
                                      current_intercept = coef(block1erg)[1])
     liste[[2]] <- result_offsets[["new_offsets"]]
     imputation_models[[1]] <- result_offsets[["imputation_model"]]
+    blocks_used_for_imputation[[1]] <-
+      result_offsets[["blocks_used_for_imputation"]]
     lassoerg <- list(block1erg)
     coeff[[1]] <- block1erg$coefficients
   } else {
@@ -516,6 +520,8 @@ prioritylasso <- function(X,
                                        lassoerg[[i]]$glmnet.fit$a0[lambda.ind[[i]]])
     liste[[i+1]] <- result_offsets[["new_offsets"]]
     imputation_models[[i]] <- result_offsets[["imputation_model"]]
+    blocks_used_for_imputation[[i]] <-
+      result_offsets[["blocks_used_for_imputation"]]
     
     min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
     nzero[i] <- lassoerg[[i]]$nzero[lambda.ind[[i]]]
@@ -546,6 +552,7 @@ prioritylasso <- function(X,
                     X = X,
                     missing.data = missing.data,
                     imputation.models = imputation_models,
+                    blocks.used.for.imputation = blocks_used_for_imputation,
                     y.scale.param = y.scale.param,
                     blocks = blocks)
   
