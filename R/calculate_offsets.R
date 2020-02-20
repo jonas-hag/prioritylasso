@@ -79,10 +79,10 @@ calculate_offsets <- function(current_missings,
         row_index <- complete.cases(x_values[, blocks[[current_block]]])
         x_values <- x_values[row_index, ]
         
-        # further select the x values:
-        # 1. get all the blocks for which the current missing values have
+        # get further information which blocks can be used for the imputation
+        # model
+        # -> get all the blocks for which the current missing values have
         # information
-        # 2. get all the x values that have information for these blocks
         na_matrix_current_missings <- is.na(X[current_missings, ])
         blocks_without_missing <- c()
         blocks_to_check <- setdiff(seq_along(blocks), current_block)
@@ -97,11 +97,11 @@ calculate_offsets <- function(current_missings,
         
         if (length(blocks_without_missing) == 0) {
           stop(paste0("No imputation model possible as a part of the observations that have missing values in block", current_block, " have no other values in [another block] for that other observations exist that have values for the current block and for [another block]."))
-        } else {
-          # restrict the x values/observations used for the imputation model
-          # to the blocks for which the current missing values have information
-          x_values <- x_values[, unlist(blocks[blocks_without_missing])]
-        }
+        }# else {
+        #   # restrict the x values/observations used for the imputation model
+        #   # to the blocks for which the current missing values have information
+        #   x_values <- x_values[, unlist(blocks[blocks_without_missing])]
+        # }
         
         
         # first, take all observations which have values for the maximum number
@@ -112,21 +112,26 @@ calculate_offsets <- function(current_missings,
         # if this still doesn't satisfy the threshold, drop the block with the
         # highest importance and repeat the steps above
         
-        # get all possibilities how the blocks can be combined
-        true_false_per_block <- lapply(seq_len(blocks_without_missing),
-                                       function(i) {
-                                         c(TRUE, FALSE)
-                                       })
-        block_combinations <- expand.grid(true_false_per_block)
-        block_combinations <- block_combinations[, ncol(block_combinations):1]
-        # the last combination doesn't contain any block, drop it
-        block_combinations <- block_combinations[1:(nrow(block_combinations) - 1), ]
-        
-        # convert TRUE/FALSE into the actual block numbers
-        possible_blocks <- blocks_without_missing
-        block_combinations <- apply(block_combinations, 1, function(i) {
-          possible_blocks[as.logical(i)]
-        })
+        # get all possibilities how the blocks can be combined if there is more
+        # than one block
+        if (length(blocks_without_missing) > 1) {
+          true_false_per_block <- lapply(seq_along(blocks_without_missing),
+                                         function(i) {
+                                           c(TRUE, FALSE)
+                                         })
+          block_combinations <- expand.grid(true_false_per_block)
+          block_combinations <- block_combinations[, ncol(block_combinations):1]
+          # the last combination doesn't contain any block, drop it
+          block_combinations <- block_combinations[1:(nrow(block_combinations) - 1), ]
+          
+          # convert TRUE/FALSE into the actual block numbers
+          block_combinations <- apply(block_combinations, 1, function(i) {
+            blocks_without_missing[as.logical(i)]
+          })
+        } else {
+          # there is only one possible block
+          block_combinations <- blocks_without_missing
+        }
         
         # try out all combinations of blocks
         n_obs_information <- data.frame(index = 1:length(block_combinations),
