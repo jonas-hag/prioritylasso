@@ -20,7 +20,7 @@ calculate_offsets <- function(current_missings,
                               X,
                               blocks,
                               current_intercept) {
-  
+  browser()
   # store the results for the current block
   # calculate the new offsets
   imputation_model <- NULL
@@ -200,9 +200,17 @@ calculate_offsets <- function(current_missings,
                                       y = y_values,
                                       nfolds = mcontrol$nfolds.imputation)
         if (!is.null(current_missings)) {
+          if (mcontrol$impute.offset.cases == "complete.cases") {
+            new_x <- X[current_missings,
+                       -blocks[[current_block]]]
+          }
+          if (mcontrol$impute.offset.cases == "available.cases") {
+           new_x <- X[current_missings,
+                      unlist(blocks[blocks_used_for_imputation])] 
+          }
+          
           missing_offsets <- predict(imputation_model,
-                                     newx = X[current_missings,
-                                              -blocks[[current_block]]],
+                                     newx = new_x,
                                      s = mcontrol$lambda.imputation)
           ret <- list(imputation_model = imputation_model,
                       missing_offsets = missing_offsets)
