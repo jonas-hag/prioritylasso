@@ -20,7 +20,7 @@ calculate_offsets <- function(current_missings,
                               X,
                               blocks,
                               current_intercept) {
-  browser()
+  
   # store the results for the current block
   # calculate the new offsets
   imputation_model <- NULL
@@ -162,7 +162,7 @@ calculate_offsets <- function(current_missings,
         # get the corresponding x values
         possible_cases_index <-
           complete.cases(x_values[, unlist(blocks[block_combinations[[index_used_blocks]]])])
-        # ncol(x_values) choses the row index which was added as the last
+        # ncol(x_values) choses the column row_index which was added as the last
         # column further up
         x_values <- x_values[possible_cases_index,
                              c(unlist(blocks[block_combinations[[index_used_blocks]]]),
@@ -266,7 +266,8 @@ calculate_offsets <- function(current_missings,
     new_offsets <- new_offsets[index_sorting, 1]
   }
   
-  # return the complete offsets and the imputation model
+  # return the complete offsets, the imputation model and the blocks used for
+  # the imputation model
   list(new_offsets = new_offsets,
        imputation_model = imputation_model,
        blocks_used_for_imputation = blocks_used_for_imputation)

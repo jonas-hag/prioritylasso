@@ -5,11 +5,13 @@
 #' \code{handle.missingtestdata} specifies how to deal with missing data.
 #' The default \code{none} cannot handle missing data, \code{set.zero} leaves out
 #' the missing data for the calculation of the prediction (the missing value is set to zero).
+#' \code{impute.block} uses an imputation model to impute the offset of a missing block. This only works if the prioritylasso object was fitted with \code{handle.missingdata = "impute.offset"}.
+#' If \code{impute.offset.cases = "complete.cases"} was used, then every observation can have only one missing block. If \code{impute.offset.cases = "available.cases"} was used, the missingness pattern in the test data has to be the same as in the train data.
 #'
 #' @param object An object of class \code{prioritylasso}.
 #' @param newdata (nnew \code{x} p) matrix or data frame with new values.
 #' @param type Specifies the type of predictions. \code{link} gives the linear predictors for all types of response and \code{response} gives the fitted values.
-#' @param handle.missingtestdata Specifies how to deal with missing data in the test data
+#' @param handle.missingtestdata Specifies how to deal with missing data in the test data; possibilities are \code{none}, \code{set.zero} and \code{impute.block}
 #' @param include.allintercepts should the intercepts from all blocks included in the prediction? If \code{FALSE}, only the intercept from the first block is included (default in the past).
 #' @param ... Further arguments passed to or from other methods.
 #'
@@ -92,18 +94,50 @@ predict.prioritylasso <- function(object,
       stop("The needed imputation models are not provided by the prioritylasso object. Refit the training data with handle.missingdata = 'impute.offset")
     }
     
+    browser()
     # if the predicted value of a missing block should be imputed, check that
-    # there is only one missing block per observation
-    # => maybe changed in the future if more flexible options are available
+    #  - there is only one missing block per observation (if the original model
+    # was fitted with impute.offset.cases = complete.cases)
+    #  - there is only the same missingness pattern as in the training data
+    # (if the original model was fitted with impute.offset.cases = available.cases)
     missing_index_overview <- matrix(FALSE, nrow = nrow(newdata),
                                      ncol = length(object$blocks))
     for (i in seq_along(object$blocks)) {
       missing_index_overview[, i] <- !complete.cases(newdata[, object$blocks[[i]]])
     }
-    for (i in seq_len(nrow(missing_index_overview))) {
-      if (sum(missing_index_overview[i, ]) > 1) {
-        stop("For handle.missingtestdata = 'impute.block', every observation must only contain one missing block.")
+    
+    # for complete.cases (is standard in missing.control, so it can be NULL in
+    # the call)
+    if (is.null(object$call$mcontrol$impute.offset.cases) ||
+        object$call$mcontrol$impute.offset.cases == "complete.cases") {
+      for (i in seq_len(nrow(missing_index_overview))) {
+        if (sum(missing_index_overview[i, ]) > 1) {
+          stop("For handle.missingtestdata = 'impute.block', every observation must only contain one missing block.")
+        }
       }
+    }
+    
+    if (object$call$mcontrol$impute.offset.cases == "available.cases") {
+      # for every observation, check if a block is missing. If this is the case,
+      # check that the required blocks for the imputation model have no missing
+      # data
+      for (i in seq_len(nrow(missing_index_overview))) {
+        for (j in seq_len(ncol(missing_index_overview))) {
+          # TRUE means that the block is missing
+          if (missing_index_overview[i, j]) {
+            # if a block j is missing, check that the blocks required to impute
+            # this block j have no missing data
+            if (sum(missing_index_overview[i, object$blocks.used.for.imputation[[j]]]) > 0) {
+              stop(paste0("Observation ", i, "lacks block ", j,
+                          ". To impute this block, the observation needs block(s) ",
+                          object$blocks.used.for.imputation[[j]]),
+                   ", which are also missing. Therefore no value can be predicted.")
+            }
+          }
+        }
+      }
+      
+      
     }
   }
   
@@ -155,6 +189,7 @@ predict.prioritylasso <- function(object,
     # determine for which observation a block has to be imputed
     # determine which block (or which not -> NA) has to be imputed for every
     # observation
+    # TODO: adapt here that more than one block can be imputed, change data str.
     impute_which_block <- unlist(apply(missing_index_overview, 1, function(x) {
       res <- which(x)
       if (length(res) == 0) {

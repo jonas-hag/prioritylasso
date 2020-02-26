@@ -35,3 +35,16 @@ pl_m1 <- prioritylasso(X = train_data_2,
                         nfolds = 5,
                         mcontrol = missing.control(handle.missingdata = "impute.offset",
                                                    impute.offset.cases = "available.cases"))
+
+pl_m2 <- prioritylasso(X = train_data,
+                       Y = train_y,
+                       family = "gaussian",
+                       type.measure = "mse",
+                       blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
+                       block1.penalization = TRUE,
+                       lambda.type = "lambda.min",
+                       standardize = TRUE,
+                       nfolds = 5,
+                       mcontrol = missing.control(handle.missingdata = "impute.offset",
+                                                  impute.offset.cases = "available.cases"))
+
