@@ -94,7 +94,7 @@ predict.prioritylasso <- function(object,
       stop("The needed imputation models are not provided by the prioritylasso object. Refit the training data with handle.missingdata = 'impute.offset")
     }
     
-    browser()
+    
     # if the predicted value of a missing block should be imputed, check that
     #  - there is only one missing block per observation (if the original model
     # was fitted with impute.offset.cases = complete.cases)
@@ -115,9 +115,8 @@ predict.prioritylasso <- function(object,
           stop("For handle.missingtestdata = 'impute.block', every observation must only contain one missing block.")
         }
       }
-    }
-    
-    if (object$call$mcontrol$impute.offset.cases == "available.cases") {
+    } else {
+      # for available.cases
       # for every observation, check if a block is missing. If this is the case,
       # check that the required blocks for the imputation model have no missing
       # data
@@ -189,23 +188,28 @@ predict.prioritylasso <- function(object,
     # determine for which observation a block has to be imputed
     # determine which block (or which not -> NA) has to be imputed for every
     # observation
+    # there can be several blocks per observation that get imputed
     # TODO: adapt here that more than one block can be imputed, change data str.
-    impute_which_block <- unlist(apply(missing_index_overview, 1, function(x) {
+    browser()
+    impute_which_block <- apply(missing_index_overview, 1, function(x) {
       res <- which(x)
       if (length(res) == 0) {
         NA
       } else {
         res
       }
-    }))
+    })
     # determine for which observations a block has to be imputed
     index_observation <- which(!is.na(impute_which_block))
     impute_which_block <- impute_which_block[index_observation]
     
-    # for these observations, the corresponding intercept doesn't need to be
-    # included
+    # for these observations (i) and the block (j), the corresponding intercept
+    # doesn't need to be included
     for (i in 1:length(index_observation)) {
-      intercept_model_matrix[index_observation[i], impute_which_block[i]] <- 0
+      for (j in seq_along(impute_which_block[[i]])) {
+        intercept_model_matrix[index_observation[i],
+                               impute_which_block[[i]][j]] <- 0
+      }
     }
     
     # perform the imputations for the missing data
@@ -215,21 +219,40 @@ predict.prioritylasso <- function(object,
       use_lambda <- object$call$mcontrol$lambda.imputation
     }
     for (i in 1:length(index_observation)) {
-      # check if a model exists or if it is just a constant
-      if (class(object$imputation.models[[impute_which_block[i]]]) == "cv.glmnet") {
-        imputed_values[index_observation[i]] <-
-          predict(object$imputation.models[[impute_which_block[i]]],
-                  newx = newdata[index_observation[i],
-                                 -object$blocks[[impute_which_block[i]]],
-                                 drop = FALSE],
-                  s = use_lambda)
-        
-      } else {
-        if (class(object$imputation.models[[impute_which_block[i]]]) == "numeric") {
+      # for every observation, check the different blocks
+      ################ explain the indexing
+      # index_observation and impute_which_block contain already only these
+      # observations where something has to be imputed
+      # therefore, i gives the index starting from 1 with which observation is
+      # dealt with, and j (starting from 1) indexes the missing block
+      # impute_which_block[[i]] gives the vector which blocks have to be
+      # imputed for the current observation
+      # impute_which_block[[i]][j] gives one block of this observation
+      # -> with this, you can chose the imputation model for the corresponding 
+      # block
+      # -> also, you can chose for this block which other blocks are used in
+      # this imputation model
+      # with this, you can select the corresponding columns for these blocks
+      # because they are returned as a list, unlist them
+      for (j in seq_along(impute_which_block[[i]])) {
+        # check if a model exists or if it is just a constant
+        if (class(object$imputation.models[[impute_which_block[[i]][j]]]) == "cv.glmnet") {
           imputed_values[index_observation[i]] <-
-            object$imputation.models[[impute_which_block[i]]]
+            predict(object$imputation.models[[impute_which_block[[i]][j]]],
+                    newx = newdata[index_observation[i],
+                                   unlist(object$blocks[object$blocks.used.for.imputation[[impute_which_block[[i]][j]]]]),
+                                   drop = FALSE],
+                    s = use_lambda) +
+            imputed_values[index_observation[i]]
+          
         } else {
-          imputed_values[index_observation[i]] <- NA 
+          if (class(object$imputation.models[[impute_which_block[i]]]) == "numeric") {
+            imputed_values[index_observation[i]] <-
+              object$imputation.models[[impute_which_block[[i]][j]]] +
+              imputed_values[index_observation[i]]
+          } else {
+            imputed_values[index_observation[i]] <- NA 
+          }
         }
       }
     }
