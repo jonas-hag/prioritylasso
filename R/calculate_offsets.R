@@ -230,7 +230,7 @@ calculate_offsets <- function(current_missings,
             missing_offsets <- rep(mean(y_values),
                                    times = length(current_missings))
             ret <- list(imputation_model = imputation_model,
-                        misssing_offsets = missing_offsets)
+                        missing_offsets = missing_offsets)
           } else {
             ret <- list(imputation_model = imputation_model)
           }
