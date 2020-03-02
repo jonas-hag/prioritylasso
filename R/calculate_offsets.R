@@ -205,8 +205,8 @@ calculate_offsets <- function(current_missings,
                        -blocks[[current_block]]]
           }
           if (mcontrol$impute.offset.cases == "available.cases") {
-           new_x <- X[current_missings,
-                      unlist(blocks[blocks_used_for_imputation])] 
+            new_x <- X[current_missings,
+                       unlist(blocks[blocks_used_for_imputation])] 
           }
           
           missing_offsets <- predict(imputation_model,
@@ -250,15 +250,16 @@ calculate_offsets <- function(current_missings,
       })
       
       imputation_model <- results[["imputation_model"]]
-      
-      # add the observation index
-      if (!is.null(missing_offsets)) {
+      if (!is.null(current_missings)) {
+        # add the observation index
         missing_offsets <- cbind(results[["missing_offsets"]], current_missings)
       }
+      
     }
     if (is.null(current_missings)) {
       new_offsets <- calculated_offsets
     } else {
+      # bring the already calculated offsets and the imputed offsets together
       new_offsets <- rbind(calculated_offsets, missing_offsets)
     }
     # bring everything into the correct order
