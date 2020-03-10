@@ -120,17 +120,31 @@ predict.prioritylasso <- function(object,
       # for every observation, check if a block is missing. If this is the case,
       # check that the required blocks for the imputation model have no missing
       # data
+      # for every observation, check if a block is missing. If this is the case,
+      # check that observation fits to a missingness pattern observed in the
+      # training data
+      missing_pattern_overview <- matrix(NA, nrow = nrow(newdata),
+                                       ncol = length(object$blocks))
       for (i in seq_len(nrow(missing_index_overview))) {
         for (j in seq_len(ncol(missing_index_overview))) {
           # TRUE means that the block is missing
           if (missing_index_overview[i, j]) {
             # if a block j is missing, check that the blocks required to impute
             # this block j have no missing data
-            if (sum(missing_index_overview[i, object$blocks.used.for.imputation[[j]]]) > 0) {
-              stop(paste0("Observation ", i, "lacks block ", j,
-                          ". To impute this block, the observation needs block(s) ",
-                          object$blocks.used.for.imputation[[j]]),
-                   ", which are also missing. Therefore no value can be predicted.")
+            # if no missingness pattern from the training data fits the
+            # missingness pattern of the current observation, the sum of the
+            # comparison is 0
+            if (sum(compare_boolean(object$missingness.pattern[[j]],
+                                    missing_index_overview[i, ])) == 0) {
+              stop(paste0("Observation ", i, " has the missingness pattern ",
+                          paste0(missing_index_overview[i, ], collapse = " "),
+                          ". This pattern was not present in the training data, therefore no value can be predicted."))
+            } else {
+              # determine the correct missingness pattern (-> and attached
+              # imputation model) for every observation/block combination
+              missing_pattern_overview[i, j] <-
+                which(compare_boolean(object$missingness.pattern[[j]],
+                                      missing_index_overview[i, ]))
             }
           }
         }
@@ -189,8 +203,6 @@ predict.prioritylasso <- function(object,
     # determine which block (or which not -> NA) has to be imputed for every
     # observation
     # there can be several blocks per observation that get imputed
-    # TODO: adapt here that more than one block can be imputed, change data str.
-    browser()
     impute_which_block <- apply(missing_index_overview, 1, function(x) {
       res <- which(x)
       if (length(res) == 0) {
@@ -202,6 +214,7 @@ predict.prioritylasso <- function(object,
     # determine for which observations a block has to be imputed
     index_observation <- which(!is.na(impute_which_block))
     impute_which_block <- impute_which_block[index_observation]
+    missing_pattern_overview <- missing_pattern_overview[index_observation, ]
     
     # for these observations (i) and the block (j), the corresponding intercept
     # doesn't need to be included
@@ -224,31 +237,33 @@ predict.prioritylasso <- function(object,
       # index_observation and impute_which_block contain already only these
       # observations where something has to be imputed
       # therefore, i gives the index starting from 1 with which observation is
-      # dealt with, and j (starting from 1) indexes the missing block
+      # dealt with, and j gives the missing block (absolute, no index)
       # impute_which_block[[i]] gives the vector which blocks have to be
       # imputed for the current observation
       # impute_which_block[[i]][j] gives one block of this observation
+      # missing_pattern_overview[i, j] gives the information which of the
+      # possible several imputation models per block has to be used
       # -> with this, you can chose the imputation model for the corresponding 
       # block
       # -> also, you can chose for this block which other blocks are used in
       # this imputation model
       # with this, you can select the corresponding columns for these blocks
       # because they are returned as a list, unlist them
-      for (j in seq_along(impute_which_block[[i]])) {
+      for (j in impute_which_block[[i]]) {
         # check if a model exists or if it is just a constant
-        if (class(object$imputation.models[[impute_which_block[[i]][j]]]) == "cv.glmnet") {
+        if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "cv.glmnet") {
           imputed_values[index_observation[i]] <-
-            predict(object$imputation.models[[impute_which_block[[i]][j]]],
+            predict(object$imputation.models[[j]][[missing_pattern_overview[i, j]]],
                     newx = newdata[index_observation[i],
-                                   unlist(object$blocks[object$blocks.used.for.imputation[[impute_which_block[[i]][j]]]]),
+                                   unlist(object$blocks[object$blocks.used.for.imputation[[j]][[missing_pattern_overview[i, j]]]]),
                                    drop = FALSE],
                     s = use_lambda) +
             imputed_values[index_observation[i]]
           
         } else {
-          if (class(object$imputation.models[[impute_which_block[i]]]) == "numeric") {
+          if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "numeric") {
             imputed_values[index_observation[i]] <-
-              object$imputation.models[[impute_which_block[[i]][j]]] +
+              object$imputation.models[[j]][[missing_pattern_overview[i, j]]] +
               imputed_values[index_observation[i]]
           } else {
             imputed_values[index_observation[i]] <- NA 

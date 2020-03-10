@@ -157,6 +157,9 @@ calculate_offsets <- function(current_missings,
       missingness_pattern <- lapply(results_available_cases, function(x) {
         x$missingness_pattern
       })
+      blocks_used_for_imputation <- lapply(results_available_cases, function(x) {
+        x$results[["blocks_used_for_imputation"]]
+      })
       if (!is.null(current_missings)) {
         # add the observation index
         missing_offsets <- lapply(results_available_cases, function(x) {

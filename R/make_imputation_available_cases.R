@@ -142,5 +142,6 @@ make_imputation_available_cases <- function(X,
   
   # return the results
   list(imputation_model = imputation_model,
-       missing_offsets = missing_offsets)
+       missing_offsets = missing_offsets,
+       blocks_used_for_imputation = blocks_used_for_imputation)
 }
