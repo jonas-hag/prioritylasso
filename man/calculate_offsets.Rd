@@ -36,7 +36,7 @@ calculate_offsets(
 \item{current_intercept}{the intercept estimated for the current block}
 }
 \value{
-list with offsets and used imputation model (if applicable)
+list with offsets, used imputation model and the blocks used for the imputation model (if applicable)
 }
 \description{
 Calculates the offsets for the current block

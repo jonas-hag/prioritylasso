@@ -20,7 +20,7 @@
 
 \item{type}{Specifies the type of predictions. \code{link} gives the linear predictors for all types of response and \code{response} gives the fitted values.}
 
-\item{handle.missingtestdata}{Specifies how to deal with missing data in the test data}
+\item{handle.missingtestdata}{Specifies how to deal with missing data in the test data; possibilities are \code{none}, \code{set.zero} and \code{impute.block}}
 
 \item{include.allintercepts}{should the intercepts from all blocks included in the prediction? If \code{FALSE}, only the intercept from the first block is included (default in the past).}
 
@@ -36,6 +36,8 @@ Makes predictions for a \code{prioritylasso} object. It can be chosen between li
 \code{handle.missingtestdata} specifies how to deal with missing data.
 The default \code{none} cannot handle missing data, \code{set.zero} leaves out
 the missing data for the calculation of the prediction (the missing value is set to zero).
+\code{impute.block} uses an imputation model to impute the offset of a missing block. This only works if the prioritylasso object was fitted with \code{handle.missingdata = "impute.offset"}.
+If \code{impute.offset.cases = "complete.cases"} was used, then every observation can have only one missing block. If \code{impute.offset.cases = "available.cases"} was used, the missingness pattern in the test data has to be the same as in the train data.
 }
 \examples{
 pl_bin <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(50,1,0.5),

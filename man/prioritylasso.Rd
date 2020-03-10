@@ -75,6 +75,7 @@ object of class \code{prioritylasso} with the following elements. If these eleme
 \item{\code{X}}{the original data used for the calculation}
 \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
 \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
+\item{\code{blocks.used.for.imputation}}{if \code{handle.missingdata = "impute.offsets"}, it contains the blocks which were used for the imputation model for every block}
 \item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
 \item{\code{blocks}}{list with the description which variables belong to which block}
 }

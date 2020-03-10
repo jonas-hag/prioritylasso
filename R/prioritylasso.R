@@ -316,6 +316,7 @@ prioritylasso <- function(X,
   liste <- list(NULL)
   imputation_models <- list()
   blocks_used_for_imputation <- list()
+  missingness_pattern <- list()
   # list for every block, if TRUE the value is missing for this block
   missing.data <- list()
   start_block <- 1
@@ -398,6 +399,7 @@ prioritylasso <- function(X,
     imputation_models[[1]] <- result_offsets[["imputation_model"]]
     blocks_used_for_imputation[[1]] <-
       result_offsets[["blocks_used_for_imputation"]]
+    missingness_pattern[[1]] <- result_offsets[["missingness_pattern"]]
     lassoerg <- list(block1erg)
     coeff[[1]] <- block1erg$coefficients
   } else {
@@ -522,6 +524,7 @@ prioritylasso <- function(X,
     imputation_models[[i]] <- result_offsets[["imputation_model"]]
     blocks_used_for_imputation[[i]] <-
       result_offsets[["blocks_used_for_imputation"]]
+    missingness_pattern[[i]] <- result_offsets[["missingness_pattern"]]
     
     min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
     nzero[i] <- lassoerg[[i]]$nzero[lambda.ind[[i]]]
@@ -553,6 +556,7 @@ prioritylasso <- function(X,
                     missing.data = missing.data,
                     imputation.models = imputation_models,
                     blocks.used.for.imputation = blocks_used_for_imputation,
+                    missingness.pattern = missingness_pattern,
                     y.scale.param = y.scale.param,
                     blocks = blocks)
   

@@ -7,10 +7,12 @@
 missing.control(
   handle.missingdata = c("none", "ignore", "impute.offset"),
   offset.firstblock = c("zero", "intercept"),
-  impute.offset.cases = "complete.cases",
+  impute.offset.cases = c("complete.cases", "available.cases"),
   nfolds.imputation = 10,
   lambda.imputation = c("lambda.min", "lambda.1se"),
-  perc.comp.cases.warning = 0.3
+  perc.comp.cases.warning = 0.3,
+  threshold.available.cases = 30,
+  select.available.cases = c("maximise.blocks", "max")
 )
 }
 \arguments{
@@ -18,13 +20,17 @@ missing.control(
 
 \item{offset.firstblock}{determines if the offset of the first block for missing observations is zero or the intercept of the observed values for \code{handle.missingdata = ignore}}
 
-\item{impute.offset.cases}{which cases should be used for the imputation model to impute missing offsets. So far, only complete cases are supported}
+\item{impute.offset.cases}{which cases/observations should be used for the imputation model to impute missing offsets. Supported are complete cases (additional constraint is that every observation can only contain one missing block) and all available observations which have an overlap with the current block.}
 
 \item{nfolds.imputation}{nfolds for the glmnet of the imputation model}
 
 \item{lambda.imputation}{which lambda-value should be used for predicting the imputed offsets in cv.glmnet}
 
 \item{perc.comp.cases.warning}{percentage of complete cases when a warning is issued of too few cases for the imputation model}
+
+\item{threshold.available.cases}{if the number of available cases for \code{impute.offset.cases = available.cases} is below this threshold, \code{prioritylasso} tries to reduce the number of blocks taken into account for the imputation model to increase the number of observations used for the imputation model.}
+
+\item{select.available.cases}{determines how the blocks which are used for the imputation model are selected when \code{impute.offset.cases = available.cases}. \code{max} selects the blocks that maximise the number of observations, \code{maximise.blocks} tries to include as many blocks as possible, starting with the blocks with the hightes priority}
 }
 \value{
 list with control parameters

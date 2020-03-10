@@ -25,6 +25,7 @@ calculate_offsets <- function(current_missings,
   # calculate the new offsets
   imputation_model <- NULL
   blocks_used_for_imputation <- NULL
+  missingness_pattern <- NULL
   # for handle.missingdata = impute.offset, an imputation model has to be
   # calculated always, even if there are no missing values
   if (is.null(current_missings) &&
@@ -67,6 +68,42 @@ calculate_offsets <- function(current_missings,
         # block (because this would completeley determine the offset)
         x_values <- x_values[, -blocks[[current_block]]]
         blocks_used_for_imputation <- setdiff(seq_along(blocks), current_block)
+        # store the missingness pattern, TRUE means missing
+        missingness_pattern <- seq_along(blocks) %in% current_block
+        
+        # get the y values (offsets) for the imputation
+        # for complete.cases:
+        # only take the offsets from the observations that are complete cases
+        # over all blocks
+        y_values_index <- as.vector(calculated_offsets[, 2]) %in%
+          as.vector(x_values[, ncol(x_values)])
+        y_values_index_num <- calculated_offsets[y_values_index, 2]
+        y_values <- calculated_offsets[y_values_index, 1]
+        
+        # check that the indices of the x and y values are the same
+        if (!all.equal(y_values_index_num, x_values[, ncol(x_values)])) {
+          stop("Mismatch of covariates and offsets in the imputation model.")
+        }
+        # delete the index column
+        x_values <- x_values[, -ncol(x_values)]
+        
+        # generate the imputation model (if the y_values are constant, the mean
+        # of these values is used)
+        results <- make_imputation_model(x_values = x_values,
+                                         y_values = y_values,
+                                         mcontrol = mcontrol,
+                                         X = X,
+                                         current_missings = current_missings,
+                                         blocks = blocks,
+                                         current_block = current_block,
+                                         blocks_used_for_imputation = 
+                                           blocks_used_for_imputation)
+        
+        imputation_model <- results[["imputation_model"]]
+        if (!is.null(current_missings)) {
+          # add the observation index
+          missing_offsets <- cbind(results[["missing_offsets"]], current_missings)
+        }
       }
       
       if (mcontrol$impute.offset.cases == "available.cases") {
@@ -79,180 +116,56 @@ calculate_offsets <- function(current_missings,
         row_index <- complete.cases(x_values[, blocks[[current_block]]])
         x_values <- x_values[row_index, ]
         
-        # get further information which blocks can be used for the imputation
-        # model
-        # -> get all the blocks for which the current missing values have
-        # information
-        na_matrix_current_missings <- is.na(X[current_missings, ])
-        blocks_without_missing <- c()
-        blocks_to_check <- setdiff(seq_along(blocks), current_block)
-        # check for every other than the current block if all the current
-        # missing observations have information in the corresponding block
-        # if yes, it can be used for the imputation model
-        for (i in blocks_to_check) {
-          if (sum(na_matrix_current_missings[, blocks[[i]]]) == 0) {
-            blocks_without_missing <- c(blocks_without_missing, i)
-          }
+        # get the information which other blocks of the observations which are
+        # missing the current block are missing
+        missing_index_overview <- matrix(FALSE, nrow = length(current_missings),
+                                         ncol = length(blocks))
+        for (i in seq_along(blocks)) {
+          missing_index_overview[, i] <- !complete.cases(X[current_missings, blocks[[i]]])
         }
         
-        if (length(blocks_without_missing) == 0) {
-          stop(paste0("No imputation model possible as a part of the observations that have missing values in block", current_block, " have no other values in [another block] for that other observations exist that have values for the current block and for [another block]."))
-        }# else {
-        #   # restrict the x values/observations used for the imputation model
-        #   # to the blocks for which the current missing values have information
-        #   x_values <- x_values[, unlist(blocks[blocks_without_missing])]
-        # }
-        
-        
-        # first, take all observations which have values for the maximum number
-        # of blocks. If this is below treshold.available.cases, drop the last
-        # block and calculate the number of observations again. If the number is
-        # still below the threshold, drop the next block etc. until the block
-        # with the highest importance is left (smallest number/most left)
-        # if this still doesn't satisfy the threshold, drop the block with the
-        # highest importance and repeat the steps above
-        
-        # get all possibilities how the blocks can be combined if there is more
-        # than one block
-        if (length(blocks_without_missing) > 1) {
-          true_false_per_block <- lapply(seq_along(blocks_without_missing),
-                                         function(i) {
-                                           c(TRUE, FALSE)
-                                         })
-          block_combinations <- expand.grid(true_false_per_block)
-          block_combinations <- block_combinations[, ncol(block_combinations):1]
-          # the last combination doesn't contain any block, drop it
-          block_combinations <- block_combinations[1:(nrow(block_combinations) - 1), ]
-          
-          # convert TRUE/FALSE into the actual block numbers
-          block_combinations <- apply(block_combinations, 1, function(i) {
-            blocks_without_missing[as.logical(i)]
+        # determine the unique pattern of missingness
+        unique_missingness_pattern <- unique(missing_index_overview)
+        # determine an imputation model for every unique missingness pattern
+        results_available_cases <-
+          apply(unique_missingness_pattern, 1, function(pattern) {
+            # determine all observerations (in which the current block is
+            # missing) that have the same missingness pattern
+            index_missingness_pattern <- compare_boolean(missing_index_overview,
+                                                         pattern)
+            missings_current_pattern <- current_missings[index_missingness_pattern]
+            
+            # calculate an imputation model for the observations with this
+            # missingness pattern
+            results <- make_imputation_available_cases(X = X,
+                                                       current_missings = missings_current_pattern,
+                                                       blocks = blocks,
+                                                       current_block = current_block,
+                                                       mcontrol = mcontrol,
+                                                       x_values = x_values,
+                                                       calculated_offsets = calculated_offsets,
+                                                       pattern_miss = pattern)
+            list(results = results,
+                 used_missing_observations = missings_current_pattern,
+                 missingness_pattern = pattern)
+            
           })
-        } else {
-          # there is only one possible block
-          block_combinations <- blocks_without_missing
-        }
         
-        # try out all combinations of blocks
-        n_obs_information <- data.frame(index = 1:length(block_combinations),
-                                        n_obs = rep(0, length(block_combinations)),
-                                        greater_threshold = rep(FALSE, length(block_combinations)))
-        for (i in 1:length(block_combinations)) {
-          possible_cases_index <-
-            complete.cases(x_values[, unlist(blocks[block_combinations[[i]]])])
-          n_obs_information$n_obs[i] <- sum(possible_cases_index)
-          n_obs_information$greater_threshold[i] <- sum(possible_cases_index) >= 
-            mcontrol$threshold.available.cases
-        }
-        
-        if (sum(n_obs_information$greater_threshold) == 0) {
-          stop(paste0("For block ", current_block, ", no imputation model could be fitted as the number of observations is lower than threshold.available.cases = ", mcontrol$threshold.available.cases))
-        }
-        
-        if (mcontrol$select.available.cases == "maximise.blocks") {
-          # only take the combinations which are >= threshold
-          temp <- n_obs_information[n_obs_information$greater_threshold, ]
-          # the first row is the observation with the best combination of blocks
-          index_used_blocks <- temp$index[1]
-        }
-        if (mcontrol$select.available.cases == "max") {
-          # take the combination that leads to the max. number of observations
-          index_used_blocks <- which.max(n_obs_information$n_obs)
-        }
-        # get the corresponding x values
-        possible_cases_index <-
-          complete.cases(x_values[, unlist(blocks[block_combinations[[index_used_blocks]]])])
-        # ncol(x_values) choses the column row_index which was added as the last
-        # column further up
-        x_values <- x_values[possible_cases_index,
-                             c(unlist(blocks[block_combinations[[index_used_blocks]]]),
-                               ncol(x_values))]
-        blocks_used_for_imputation <- block_combinations[[index_used_blocks]]
-        message(paste0("For block ", current_block, " the imputation model contains ", n_obs_information$n_obs[index_used_blocks], " observations."))
-        
-        
-      }
-      
-      # get the y values (offsets) for the imputation
-      # for complete.cases:
-      # only take the offsets from the observations that are complete cases
-      # over all blocks
-      # for available.cases:
-      # only take the offsets from the observations that are used for the
-      # imputation model (for which the x values are taken)
-      y_values_index <- as.vector(calculated_offsets[, 2]) %in%
-        as.vector(x_values[, ncol(x_values)])
-      y_values_index_num <- calculated_offsets[y_values_index, 2]
-      y_values <- calculated_offsets[y_values_index, 1]
-      
-      # check that the indices of the x and y values are the same
-      if (!all.equal(y_values_index_num, x_values[, ncol(x_values)])) {
-        stop("Mismatch of covariates and offsets in the imputation model.")
-      }
-      # delete the index column
-      x_values <- x_values[, -ncol(x_values)]
-      
-      # if the offsets (y_values) are all equal, an imputation
-      # model is not possible; instead use the constant offset also for the rest
-      # of the imputations
-      results <- tryCatch({
-        imputation_model <- cv.glmnet(x = x_values,
-                                      y = y_values,
-                                      nfolds = mcontrol$nfolds.imputation)
-        if (!is.null(current_missings)) {
-          if (mcontrol$impute.offset.cases == "complete.cases") {
-            new_x <- X[current_missings,
-                       -blocks[[current_block]]]
-          }
-          if (mcontrol$impute.offset.cases == "available.cases") {
-            new_x <- X[current_missings,
-                       unlist(blocks[blocks_used_for_imputation])] 
-          }
-          
-          missing_offsets <- predict(imputation_model,
-                                     newx = new_x,
-                                     s = mcontrol$lambda.imputation)
-          ret <- list(imputation_model = imputation_model,
-                      missing_offsets = missing_offsets)
-        } else {
-          ret <- list(imputation_model = imputation_model)
-        }
-        ret
-        
-      }, error = function(e) {
-        error_is_constant_issue <- grepl(
-          pattern = "y is constant; gaussian glmnet fails at standardization step",
-          x = e)
-        if (error_is_constant_issue) {
-          warning("The offsets calculated for the current block are all equal. An imputation model is not possible, instead the value of the calculated offsets is used as the imputed value.")
-          imputation_model <- mean(y_values)
-          if (!is.null(current_missings)) {
-            missing_offsets <- rep(mean(y_values),
-                                   times = length(current_missings))
-            ret <- list(imputation_model = imputation_model,
-                        missing_offsets = missing_offsets)
-          } else {
-            ret <- list(imputation_model = imputation_model)
-          }
-        } else {
-          warning(paste0("An error in the imputation model for block ",
-                         current_block, " occured."))
-          imputation_model <- NULL
-          if (!is.null(current_missings)) {
-            missing_offsets <- rep(NA, times = length(current_missings))
-            ret <- list(imputation_model = imputation_model,
-                        missing_offsets = missing_offsets)
-          } else {
-            ret <- list(imputation_model = imputation_model)
-          }
-        }
-        ret
+      imputation_model <- lapply(results_available_cases, function(x) {
+        x$results[["imputation_model"]]
       })
-      
-      imputation_model <- results[["imputation_model"]]
+      missingness_pattern <- lapply(results_available_cases, function(x) {
+        x$missingness_pattern
+      })
       if (!is.null(current_missings)) {
         # add the observation index
-        missing_offsets <- cbind(results[["missing_offsets"]], current_missings)
+        missing_offsets <- lapply(results_available_cases, function(x) {
+          cbind(x$results[["missing_offsets"]], x$used_missing_observations)
+        })
+        missing_offsets <- do.call("rbind", missing_offsets)
+      }
+        
+        
       }
       
     }
@@ -271,5 +184,6 @@ calculate_offsets <- function(current_missings,
   # the imputation model
   list(new_offsets = new_offsets,
        imputation_model = imputation_model,
-       blocks_used_for_imputation = blocks_used_for_imputation)
+       blocks_used_for_imputation = blocks_used_for_imputation,
+       missingness_pattern = missingness_pattern)
 }
