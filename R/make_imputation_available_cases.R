@@ -10,7 +10,7 @@ make_imputation_available_cases <- function(X,
   # model
   # -> get all the blocks for which the current missing values have
   # information
-  na_matrix_current_missings <- is.na(X[current_missings, ])
+  na_matrix_current_missings <- is.na(X[current_missings, , drop = FALSE])
   blocks_without_missing <- c()
   blocks_to_check <- setdiff(seq_along(blocks), current_block)
   # check for every other than the current block if all the current

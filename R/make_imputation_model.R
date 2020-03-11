@@ -13,11 +13,11 @@ make_imputation_model <- function(x_values,
     if (!is.null(current_missings)) {
       if (mcontrol$impute.offset.cases == "complete.cases") {
         new_x <- X[current_missings,
-                   -blocks[[current_block]]]
+                   -blocks[[current_block]], drop = FALSE]
       }
       if (mcontrol$impute.offset.cases == "available.cases") {
         new_x <- X[current_missings,
-                   unlist(blocks[blocks_used_for_imputation])] 
+                   unlist(blocks[blocks_used_for_imputation]), drop = FALSE] 
       }
       
       missing_offsets <- predict(imputation_model,
@@ -50,7 +50,8 @@ make_imputation_model <- function(x_values,
       }
     } else {
       warning(paste0("An error in the imputation model for block ",
-                     current_block, " occured."))
+                     current_block, " occured:"))
+      print(e)
       imputation_model <- NULL
       if (!is.null(current_missings)) {
         missing_offsets <- rep(NA, times = length(current_missings))
