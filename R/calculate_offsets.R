@@ -106,7 +106,8 @@ calculate_offsets <- function(current_missings,
         }
       }
       
-      if (mcontrol$impute.offset.cases == "available.cases") {
+      if (mcontrol$impute.offset.cases == "available.cases" &&
+          !is.null(current_missings)) {
         # get the x values for the imputation
         x_values <- cbind(X, row_index = 1:nrow(X))
         # only take the observations which have values for the current block
