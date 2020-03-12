@@ -195,7 +195,6 @@ prioritylasso <- function(X,
                  ") not equal to the number of rows of X (", nrow(X),
                  ")", sep = "")) }
   
-  
   if(!missing(foldid)){
     if (length(foldid) != nrow(X))
       stop(paste("number of elements in foldid (", length(foldid),
@@ -220,9 +219,9 @@ prioritylasso <- function(X,
     stop("At the moment, a crossvalidated offset is only supported for complete data sets.")
   }
   
-  # issue warnings concering missing data handling
+  # issue warnings concerning missing data handling
   if (mcontrol$handle.missingdata == "ignore" ||
-      mcontrol$handle.missingdata == "impute_offset") {
+      mcontrol$handle.missingdata == "impute.offset") {
     foldid <- NULL
     warning(paste0("For handle.missingdata = ", mcontrol$handle.missingdata, ", the foldids of the observations are chosen individually for every block and not set globally. foldid is set to NULL"))
   }
