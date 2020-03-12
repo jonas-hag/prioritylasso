@@ -13,13 +13,14 @@
 #' @param type Specifies the type of predictions. \code{link} gives the linear predictors for all types of response and \code{response} gives the fitted values.
 #' @param handle.missingtestdata Specifies how to deal with missing data in the test data; possibilities are \code{none}, \code{set.zero} and \code{impute.block}
 #' @param include.allintercepts should the intercepts from all blocks included in the prediction? If \code{FALSE}, only the intercept from the first block is included (default in the past).
+#' @param use.blocks determines which blocks are used for the prediction, the default is all. Otherwise one can specify the number of blocks which are used in a vector
 #' @param ... Further arguments passed to or from other methods.
 #'
 #' @return Predictions that depend on \code{type}.
 #'
 #' @author Simon Klau
 #' @export
-#' @importFrom checkmate assert_logical
+#' @importFrom checkmate assert_logical assert_numeric
 #' @import glmnet
 #' @seealso \code{\link[prioritylasso]{pl_data}}, \code{\link[prioritylasso]{prioritylasso}}
 #' @examples
@@ -42,12 +43,19 @@ predict.prioritylasso <- function(object,
                                   handle.missingtestdata = c("none", "set.zero",
                                                              "impute.block"),
                                   include.allintercepts = FALSE,
+                                  use.blocks = "all",
                                   ...){
   
   # input check
   type <- match.arg(type)
   handle.missingtestdata <- match.arg(handle.missingtestdata)
   assert_logical(include.allintercepts)
+  if (use.blocks[1] != "all" || length(use.blocks) != 1) {
+    # if not all blocks are selected via "all", one can only select at max. all
+    # blocks with their order from 1 to last block
+    assert_numeric(use.blocks, min.len = 1, max.len = length(object$blocks),
+                   unique = TRUE, lower = 1, upper = length(object$blocks))
+  }
   
   if (is.null(newdata)) {
     newdata <- as.matrix(object$X)
@@ -124,7 +132,7 @@ predict.prioritylasso <- function(object,
       # check that observation fits to a missingness pattern observed in the
       # training data
       missing_pattern_overview <- matrix(NA, nrow = nrow(newdata),
-                                       ncol = length(object$blocks))
+                                         ncol = length(object$blocks))
       for (i in seq_len(nrow(missing_index_overview))) {
         for (j in seq_len(ncol(missing_index_overview))) {
           # TRUE means that the block is missing
@@ -191,10 +199,22 @@ predict.prioritylasso <- function(object,
                                    ncol = length(object$blocks))
   
   # determine if only the first intercept or all intercepts should be included
+  # also take into account that only these intercepts are used that belong to
+  # to the blocks which should be used for prediction
   if (include.allintercepts) {
-    intercept_model_matrix[, ] <- 1
+    # only use the intercepts from the blocks used for prediction
+    if (use.blocks[1] == "all") {
+      block_index <- 1:length(object$blocks)
+    } else {
+      block_index <- use.blocks
+    }
+    
+    intercept_model_matrix[, block_index] <- 1
+    
   } else {
-    intercept_model_matrix[, 1] <- 1
+    if (use.blocks[1] == "all" || 1 %in% use.blocks) {
+      intercept_model_matrix[, 1] <- 1
+    }
   }
   
   imputed_values <- rep(0, nrow(newdata))
@@ -250,23 +270,26 @@ predict.prioritylasso <- function(object,
       # with this, you can select the corresponding columns for these blocks
       # because they are returned as a list, unlist them
       for (j in impute_which_block[[i]]) {
-        # check if a model exists or if it is just a constant
-        if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "cv.glmnet") {
-          imputed_values[index_observation[i]] <-
-            predict(object$imputation.models[[j]][[missing_pattern_overview[i, j]]],
-                    newx = newdata[index_observation[i],
-                                   unlist(object$blocks[object$blocks.used.for.imputation[[j]][[missing_pattern_overview[i, j]]]]),
-                                   drop = FALSE],
-                    s = use_lambda) +
-            imputed_values[index_observation[i]]
-          
-        } else {
-          if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "numeric") {
+        # check if the current block should be used for prediction
+        if (j %in% use.blocks || use.blocks[1] == "all") {
+          # check if a model exists or if it is just a constant
+          if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "cv.glmnet") {
             imputed_values[index_observation[i]] <-
-              object$imputation.models[[j]][[missing_pattern_overview[i, j]]] +
+              predict(object$imputation.models[[j]][[missing_pattern_overview[i, j]]],
+                      newx = newdata[index_observation[i],
+                                     unlist(object$blocks[object$blocks.used.for.imputation[[j]][[missing_pattern_overview[i, j]]]]),
+                                     drop = FALSE],
+                      s = use_lambda) +
               imputed_values[index_observation[i]]
+            
           } else {
-            imputed_values[index_observation[i]] <- NA 
+            if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "numeric") {
+              imputed_values[index_observation[i]] <-
+                object$imputation.models[[j]][[missing_pattern_overview[i, j]]] +
+                imputed_values[index_observation[i]]
+            } else {
+              imputed_values[index_observation[i]] <- NA 
+            }
           }
         }
       }
@@ -302,6 +325,17 @@ predict.prioritylasso <- function(object,
       
       coeff <- object$coefficients[-1]
     }
+  }
+  
+  # only take the coefficients and covariates of the blocks that should be used
+  # for prediction
+  if (use.blocks[1] != "all") {
+    index_covariates <- unlist(lapply(use.blocks, function(i) {
+      object$blocks[[i]]
+    }))
+    index_covariates <- sort(index_covariates)
+    coeff <- coeff[index_covariates]
+    newdata <- newdata[, index_covariates]
   }
   
   pred <- newdata %*% coeff + add_intercept + imputed_values
