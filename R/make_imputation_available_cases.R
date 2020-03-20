@@ -22,13 +22,11 @@ make_imputation_available_cases <- function(X,
     }
   }
   
+  # this safety condition shouldn't be needed anymore
   if (length(blocks_without_missing) == 0) {
-    stop(paste0("No imputation model possible as a part of the observations that have missing values in block", current_block, " have no other values in [another block] for that other observations exist that have values for the current block and for [another block]."))
-  }# else {
-  #   # restrict the x values/observations used for the imputation model
-  #   # to the blocks for which the current missing values have information
-  #   x_values <- x_values[, unlist(blocks[blocks_without_missing])]
-  # }
+    stop(paste0("For block ", current_block, " and missingness pattern ",
+                paste0(pattern_miss, collapse = " "), "no imputation model is possible, as there is no other block where data is not missing."))
+  }
   
   
   # first, take all observations which have values for the maximum number
