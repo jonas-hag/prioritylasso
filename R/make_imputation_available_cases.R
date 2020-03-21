@@ -126,12 +126,7 @@ make_imputation_available_cases <- function(X,
                                      blocks_used_for_imputation)
   
   imputation_model <- results[["imputation_model"]]
-  # if (!is.null(current_missings)) {
-  #   # add the observation index
-  #   missing_offsets <- cbind(results[["missing_offsets"]], current_missings)
-  # } else {
-  #   missing_offsets <- NULL
-  # }
+  
   if (!is.null(current_missings)) {
     missing_offsets <- results[["missing_offsets"]]
   } else {
