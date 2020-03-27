@@ -3,15 +3,16 @@
 #' Makes predictions for a \code{prioritylasso} object. It can be chosen between linear predictors or fitted values.
 #'
 #' \code{handle.missingtestdata} specifies how to deal with missing data.
-#' The default \code{none} cannot handle missing data, \code{set.zero} leaves out
+#' The default \code{none} cannot handle missing data, \code{omit.prediction} does not make a prediction for observations with missing values and return \code{NA}. \code{set.zero} ignores
 #' the missing data for the calculation of the prediction (the missing value is set to zero).
 #' \code{impute.block} uses an imputation model to impute the offset of a missing block. This only works if the prioritylasso object was fitted with \code{handle.missingdata = "impute.offset"}.
-#' If \code{impute.offset.cases = "complete.cases"} was used, then every observation can have only one missing block. If \code{impute.offset.cases = "available.cases"} was used, the missingness pattern in the test data has to be the same as in the train data.
+#' If \code{impute.offset.cases = "complete.cases"} was used, then every observation can have only one missing block. For observations with more than one missing block, \code{NA} is returned.
+#' If \code{impute.offset.cases = "available.cases"} was used, the missingness pattern in the test data has to be the same as in the train data. For observations with an unknown missingness pattern, \code{NA} is returned.
 #'
 #' @param object An object of class \code{prioritylasso}.
 #' @param newdata (nnew \code{x} p) matrix or data frame with new values.
 #' @param type Specifies the type of predictions. \code{link} gives the linear predictors for all types of response and \code{response} gives the fitted values.
-#' @param handle.missingtestdata Specifies how to deal with missing data in the test data; possibilities are \code{none}, \code{set.zero} and \code{impute.block}
+#' @param handle.missingtestdata Specifies how to deal with missing data in the test data; possibilities are \code{none}, \code{omit.prediction}, \code{set.zero} and \code{impute.block}
 #' @param include.allintercepts should the intercepts from all blocks included in the prediction? If \code{FALSE}, only the intercept from the first block is included (default in the past).
 #' @param use.blocks determines which blocks are used for the prediction, the default is all. Otherwise one can specify the number of blocks which are used in a vector
 #' @param ... Further arguments passed to or from other methods.
@@ -40,13 +41,17 @@
 predict.prioritylasso <- function(object,
                                   newdata = NULL,
                                   type = c("link", "response"),
-                                  handle.missingtestdata = c("none", "set.zero",
+                                  handle.missingtestdata = c("none",
+                                                             "omit.prediction",
+                                                             "set.zero",
                                                              "impute.block"),
                                   include.allintercepts = FALSE,
                                   use.blocks = "all",
                                   ...){
   
-  # input check
+  ##############################################################################
+  ############################ input check
+  ##############################################################################
   type <- match.arg(type)
   handle.missingtestdata <- match.arg(handle.missingtestdata)
   assert_logical(include.allintercepts)
@@ -95,6 +100,44 @@ predict.prioritylasso <- function(object,
     stop("The data consists only of complete cases. Please use handle.missingtestdata = 'none'.")
   }
   
+  # store one parameter from the model in a local variable for easier access
+  if (is.null(object$call$mcontrol$impute.offset.cases)) {
+    # this is the default from missing.control
+    param_offset_cases <- "complete.cases"
+  } else {
+    param_offset_cases <- object$call$mcontrol$impute.offset.cases
+  }
+  
+  ##############################################################################
+  ############################ omit.prediction
+  ############################ exclude observations
+  ##############################################################################
+  
+  # if handle.missingtestdata = omit.prediction, search for observations with
+  # missing values -> these are excluded from the prediction
+  index_exclude_observations <- NULL
+  missing_index_overview <- matrix(FALSE, nrow = nrow(newdata),
+                                   ncol = length(object$blocks))
+  if (handle.missingtestdata == "omit.prediction") {
+    for (i in seq_len(nrow(missing_index_overview))) {
+      if (sum(missing_index_overview[i, ]) > 0) {
+        index_exclude_observations <- c(index_exclude_observations, i)
+      }
+    }
+    
+    # exclude observations with missing values
+    index_include_observations <- setdiff(seq_len(nrow(newdata)),
+                                          index_exclude_observations)
+    newdata <- newdata[index_include_observations, ]
+    missing_index_overview <-
+      missing_index_overview[index_include_observations, ]
+  }
+  
+  ##############################################################################
+  ############################ impute.block
+  ############################ exclude observations
+  ##############################################################################
+  
   if (handle.missingtestdata == "impute.block") {
     # check that the prioritylasso object contains the imputation models
     if (object$call$mcontrol$handle.missingdata != "impute.offset" ||
@@ -102,28 +145,39 @@ predict.prioritylasso <- function(object,
       stop("The needed imputation models are not provided by the prioritylasso object. Refit the training data with handle.missingdata = 'impute.offset")
     }
     
+    # if handle.missingtestdata = impute.block,
+    # all observations with unfitting missingness patterns are excluded and NA
+    # returned for this observations
     
     # if the predicted value of a missing block should be imputed, check that
     #  - there is only one missing block per observation (if the original model
     # was fitted with impute.offset.cases = complete.cases)
     #  - there is only the same missingness pattern as in the training data
     # (if the original model was fitted with impute.offset.cases = available.cases)
-    missing_index_overview <- matrix(FALSE, nrow = nrow(newdata),
-                                     ncol = length(object$blocks))
     for (i in seq_along(object$blocks)) {
       missing_index_overview[, i] <- !complete.cases(newdata[, object$blocks[[i]]])
     }
     
-    # for complete.cases (is standard in missing.control, so it can be NULL in
-    # the call)
-    if (is.null(object$call$mcontrol$impute.offset.cases) ||
-        object$call$mcontrol$impute.offset.cases == "complete.cases") {
+    
+    # for complete.cases
+    if (param_offset_cases == "complete.cases") {
       for (i in seq_len(nrow(missing_index_overview))) {
         if (sum(missing_index_overview[i, ]) > 1) {
-          stop("For handle.missingtestdata = 'impute.block', every observation must only contain one missing block.")
+          index_exclude_observations <- c(index_exclude_observations, i)
+          # stop("For handle.missingtestdata = 'impute.block', every observation must only contain one missing block.")
         }
       }
+      
+      index_include_observations <- setdiff(seq_len(nrow(newdata)),
+                                            index_exclude_observations)
+      
     } else {
+      
+      ##########################################################################
+      ############################ available.cases
+      ############################ determine missingness pattern
+      ##########################################################################
+      
       # for available.cases
       # for every observation, check if a block is missing. If this is the case,
       # check that the required blocks for the imputation model have no missing
@@ -144,9 +198,11 @@ predict.prioritylasso <- function(object,
             # comparison is 0
             if (sum(compare_boolean(object$missingness.pattern[[j]],
                                     missing_index_overview[i, ])) == 0) {
-              stop(paste0("Observation ", i, " has the missingness pattern ",
-                          paste0(missing_index_overview[i, ], collapse = " "),
-                          ". This pattern was not present in the training data, therefore no value can be predicted."))
+              index_exclude_observations <- c(index_exclude_observations, i)
+              
+              # stop(paste0("Observation ", i, " has the missingness pattern ",
+              #             paste0(missing_index_overview[i, ], collapse = " "),
+              #             ". This pattern was not present in the training data, therefore no value can be predicted."))
             } else {
               # determine the correct missingness pattern (-> and attached
               # imputation model) for every observation/block combination
@@ -157,10 +213,24 @@ predict.prioritylasso <- function(object,
           }
         }
       }
+      # due to checking every block separately, the index could contain an
+      # observation several times
+      index_exclude_observations <- unique(index_exclude_observations)
       
+      # delete the rows in missing_pattern_overview for excluded observations
+      index_include_observations <- setdiff(seq_len(nrow(newdata)),
+                                            index_exclude_observations)
+      missing_pattern_overview <-
+        missing_pattern_overview[index_include_observations, ]
       
     }
+    # exclude observations with missing values
+    newdata <- newdata[index_include_observations, ]
+    missing_index_overview <-
+      missing_index_overview[index_include_observations, ]
   }
+  
+  
   
   # if blocks should be imputed -> check for every observation if/which blocks
   # needs imputation
@@ -172,6 +242,10 @@ predict.prioritylasso <- function(object,
   # for every observation, make a matrix with 1 if this intercept should be
   # included or 0 if not (needed for imputed observations that the intercept
   # is not added additionally)
+  
+  ##############################################################################
+  ############################ get intercepts
+  ##############################################################################
   
   # generate vector with intercepts of the different blocks
   # cox model does not have intercepts
@@ -192,6 +266,10 @@ predict.prioritylasso <- function(object,
       }
     }
   }
+  
+  ##############################################################################
+  ############################ determine which intercepts to use
+  ##############################################################################
   
   # generate matrix with entry for every observation (row) and every intercept
   # (column) if it should be included
@@ -234,7 +312,9 @@ predict.prioritylasso <- function(object,
     # determine for which observations a block has to be imputed
     index_observation <- which(!is.na(impute_which_block))
     impute_which_block <- impute_which_block[index_observation]
-    missing_pattern_overview <- missing_pattern_overview[index_observation, ]
+    if (param_offset_cases == "available.cases") {
+      missing_pattern_overview <- missing_pattern_overview[index_observation, ]
+    }
     
     # for these observations (i) and the block (j), the corresponding intercept
     # doesn't need to be included
@@ -269,29 +349,63 @@ predict.prioritylasso <- function(object,
       # this imputation model
       # with this, you can select the corresponding columns for these blocks
       # because they are returned as a list, unlist them
-      for (j in impute_which_block[[i]]) {
-        # check if the current block should be used for prediction
-        if (j %in% use.blocks || use.blocks[1] == "all") {
+      
+      ##########################################################################
+      ############################ imputation for available.cases
+      ##########################################################################
+      if (param_offset_cases == "available.cases") {
+        for (j in impute_which_block[[i]]) {
+          # check if the current block should be used for prediction
+          if (j %in% use.blocks || use.blocks[1] == "all") {
+            # check if a model exists or if it is just a constant
+            if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "cv.glmnet") {
+              imputed_values[index_observation[i]] <-
+                predict(object$imputation.models[[j]][[missing_pattern_overview[i, j]]],
+                        newx = newdata[index_observation[i],
+                                       unlist(object$blocks[object$blocks.used.for.imputation[[j]][[missing_pattern_overview[i, j]]]]),
+                                       drop = FALSE],
+                        s = use_lambda) +
+                imputed_values[index_observation[i]]
+              
+            } else {
+              if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "numeric") {
+                imputed_values[index_observation[i]] <-
+                  object$imputation.models[[j]][[missing_pattern_overview[i, j]]] +
+                  imputed_values[index_observation[i]]
+              } else {
+                imputed_values[index_observation[i]] <- NA 
+              }
+            }
+          }
+          
+        }
+      } else {
+        ########################################################################
+        ############################ imputation for complete.cases
+        ########################################################################
+        imputed_block <- impute_which_block[[i]]
+        if (imputed_block %in% use.blocks || use.blocks[1] == "all") {
           # check if a model exists or if it is just a constant
-          if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "cv.glmnet") {
+          if (class(object$imputation.models[[imputed_block]]) == "cv.glmnet") {
             imputed_values[index_observation[i]] <-
-              predict(object$imputation.models[[j]][[missing_pattern_overview[i, j]]],
+              predict(object$imputation.models[[imputed_block]],
                       newx = newdata[index_observation[i],
-                                     unlist(object$blocks[object$blocks.used.for.imputation[[j]][[missing_pattern_overview[i, j]]]]),
+                                     unlist(object$blocks[object$blocks.used.for.imputation[[imputed_block]]]),
                                      drop = FALSE],
                       s = use_lambda) +
               imputed_values[index_observation[i]]
             
           } else {
-            if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "numeric") {
+            if (class(object$imputation.models[[imputed_block]]) == "numeric") {
               imputed_values[index_observation[i]] <-
-                object$imputation.models[[j]][[missing_pattern_overview[i, j]]] +
+                object$imputation.models[[imputed_block]] +
                 imputed_values[index_observation[i]]
             } else {
               imputed_values[index_observation[i]] <- NA 
             }
           }
         }
+        
       }
     }
   }
@@ -300,13 +414,16 @@ predict.prioritylasso <- function(object,
   add_intercept <- intercept_model_matrix %*% intercepts
   
   # if missing data should be ignored, set NAs to 0
-  # the same if blocks should get imputed
+  # the same if blocks should get imputed (because the blocks with NA were
+  # already imputed in the step above)
   if (handle.missingtestdata == "set.zero" ||
       handle.missingtestdata == "impute.block") {
     newdata <- replace(newdata, which(is.na(newdata)), 0)
   }
   
-  # determine the coefficients
+  ##############################################################################
+  ############################ determine the coefficients
+  ##############################################################################
   # family = cox
   if (object$call$family == "cox") {
     
@@ -338,6 +455,10 @@ predict.prioritylasso <- function(object,
     newdata <- newdata[, index_covariates]
   }
   
+  ##############################################################################
+  ############################ calculate the prediction & finetuning
+  ##############################################################################
+  
   pred <- newdata %*% coeff + add_intercept + imputed_values
   
   
@@ -355,5 +476,24 @@ predict.prioritylasso <- function(object,
       !is.null(object$y.scale.param)) {
     pred <- pred * object$y.scale.param$sd + object$y.scale.param$mean
   }
+  
+  # if for some obsevations no prediction could be made (due to missing values),
+  # return NA for these observations
+  if (length(index_exclude_observations) > 0) {
+    # add the position index of the predicted observations
+    pred <- cbind(pred, index_include_observations)
+    
+    # add NAs for the observations, for which a prediction is not possible
+    na_matrix <- matrix(NA, nrow = length(index_exclude_observations),
+                        ncol = 1)
+    na_matrix <- cbind(na_matrix, index_exclude_observations)
+    pred <- rbind(pred, na_matrix)
+    
+    # bring the observations into the correct order
+    pred <- pred[order(pred[, 2]), ]
+    pred <- pred[, 1, drop = FALSE]
+    
+  }
+  
   return(pred)
 }
