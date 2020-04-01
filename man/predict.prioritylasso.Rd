@@ -8,8 +8,9 @@
   object,
   newdata = NULL,
   type = c("link", "response"),
-  handle.missingtestdata = c("none", "set.zero", "impute.block"),
+  handle.missingtestdata = c("none", "omit.prediction", "set.zero", "impute.block"),
   include.allintercepts = FALSE,
+  use.blocks = "all",
   ...
 )
 }
@@ -20,9 +21,11 @@
 
 \item{type}{Specifies the type of predictions. \code{link} gives the linear predictors for all types of response and \code{response} gives the fitted values.}
 
-\item{handle.missingtestdata}{Specifies how to deal with missing data in the test data; possibilities are \code{none}, \code{set.zero} and \code{impute.block}}
+\item{handle.missingtestdata}{Specifies how to deal with missing data in the test data; possibilities are \code{none}, \code{omit.prediction}, \code{set.zero} and \code{impute.block}}
 
 \item{include.allintercepts}{should the intercepts from all blocks included in the prediction? If \code{FALSE}, only the intercept from the first block is included (default in the past).}
+
+\item{use.blocks}{determines which blocks are used for the prediction, the default is all. Otherwise one can specify the number of blocks which are used in a vector}
 
 \item{...}{Further arguments passed to or from other methods.}
 }
@@ -34,10 +37,11 @@ Makes predictions for a \code{prioritylasso} object. It can be chosen between li
 }
 \details{
 \code{handle.missingtestdata} specifies how to deal with missing data.
-The default \code{none} cannot handle missing data, \code{set.zero} leaves out
+The default \code{none} cannot handle missing data, \code{omit.prediction} does not make a prediction for observations with missing values and return \code{NA}. \code{set.zero} ignores
 the missing data for the calculation of the prediction (the missing value is set to zero).
 \code{impute.block} uses an imputation model to impute the offset of a missing block. This only works if the prioritylasso object was fitted with \code{handle.missingdata = "impute.offset"}.
-If \code{impute.offset.cases = "complete.cases"} was used, then every observation can have only one missing block. If \code{impute.offset.cases = "available.cases"} was used, the missingness pattern in the test data has to be the same as in the train data.
+If \code{impute.offset.cases = "complete.cases"} was used, then every observation can have only one missing block. For observations with more than one missing block, \code{NA} is returned.
+If \code{impute.offset.cases = "available.cases"} was used, the missingness pattern in the test data has to be the same as in the train data. For observations with an unknown missingness pattern, \code{NA} is returned.
 }
 \examples{
 pl_bin <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(50,1,0.5),
