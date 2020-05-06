@@ -228,7 +228,7 @@ predict.prioritylasso <- function(object,
     # exclude observations with missing values
     newdata <- newdata[index_include_observations, ]
     missing_index_overview <-
-      missing_index_overview[index_include_observations, ]
+      missing_index_overview[index_include_observations, , drop = FALSE]
   }
   
   
@@ -323,7 +323,7 @@ predict.prioritylasso <- function(object,
     if (length(index_observation) != 0) {
       impute_which_block <- impute_which_block[index_observation]
       if (param_offset_cases == "available.cases") {
-        missing_pattern_overview <- missing_pattern_overview[index_observation, ]
+        missing_pattern_overview <- missing_pattern_overview[index_observation, , drop = FALSE]
       }
       
       # for these observations (i) and the block (j), the corresponding intercept
