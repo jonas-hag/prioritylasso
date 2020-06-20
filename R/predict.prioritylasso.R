@@ -139,6 +139,14 @@ predict.prioritylasso <- function(object,
   ############################ exclude observations
   ##############################################################################
   
+  # generate the index which blocks are missing for which observation
+  # (outside of conditions only for impute.block, as the index is also needed
+  # to exclude intercepts from the prediction for handle.missingtestdata =
+  # set.zero when the model was trained with handle.missingdata = ignore)
+  for (i in seq_along(object$blocks)) {
+    missing_index_overview[, i] <- !complete.cases(newdata[, object$blocks[[i]]])
+  }
+  
   if (handle.missingtestdata == "impute.block") {
     # check that the prioritylasso object contains the imputation models
     if (object$call$mcontrol$handle.missingdata != "impute.offset" ||
@@ -155,9 +163,6 @@ predict.prioritylasso <- function(object,
     # was fitted with impute.offset.cases = complete.cases)
     #  - there is only the same missingness pattern as in the training data
     # (if the original model was fitted with impute.offset.cases = available.cases)
-    for (i in seq_along(object$blocks)) {
-      missing_index_overview[, i] <- !complete.cases(newdata[, object$blocks[[i]]])
-    }
     
     
     # for complete.cases
@@ -293,6 +298,21 @@ predict.prioritylasso <- function(object,
   } else {
     if (use.blocks[1] == "all" || 1 %in% use.blocks) {
       intercept_model_matrix[, 1] <- 1
+    }
+  }
+  
+  # if handle.missingtestdata = set.zero, also exclude the intercept of the
+  # blocks where the data is set to zero
+  if (handle.missingtestdata == "set.zero") {
+    # check for every observation
+    for (i in seq_len(nrow(intercept_model_matrix))) {
+      # for every block
+      for (j in seq_len(ncol(intercept_model_matrix))) {
+        # if the observation is missing this block, also exclude the intercept
+        if (missing_index_overview[i, j]) {
+          intercept_model_matrix[i, j] <- 0
+        }
+      }
     }
   }
   
