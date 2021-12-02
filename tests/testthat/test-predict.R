@@ -81,7 +81,7 @@ context("tests for predict.prioritylasso")
 test_that("testing predictions for binomial family", {
 
   expect_true(dim(bin1_predict)[1] == 30)
-  expect_true(class(bin2_predict) == "matrix")
+  expect_true(class(bin2_predict)[1] == "matrix")
 
 })
 
