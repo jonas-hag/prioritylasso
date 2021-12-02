@@ -1,4 +1,9 @@
 # prioritylasso
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/jonas-hag/prioritylasso/workflows/R-CMD-check/badge.svg)](https://github.com/jonas-hag/prioritylasso/actions)
+<!-- badges: end -->
+
 prioritylasso is an `R` package that fits successive Lasso models for several
 blocks of (omics) data with different priorities and takes the predicted values
 as an offset for the next block.
