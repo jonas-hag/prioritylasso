@@ -4,14 +4,16 @@
 \name{pl_data}
 \alias{pl_data}
 \title{Simulated AML data with binary outcome}
-\format{A data frame with 400 rows and 1029 variables:
+\format{
+A data frame with 400 rows and 1029 variables:
 \describe{
   \item{pl_out: (\code{pl_data[,1029]})}{binary outcome representing refractory status.}
   \item{b1: (\code{pl_data[,1:4]})}{4 binary variables representing variables with a known influence on the outcome.}
   \item{b2: (\code{pl_data[,5:9]})}{5 continuous variables representing clinical variables.}
   \item{b3: (\code{pl_data[,10:28]})}{19 binary variables representing mutations.}
   \item{b4: (\code{pl_data[,29:1028]})}{1000 continuous variables representing gene expression data.}
-}}
+}
+}
 \usage{
 pl_data
 }
