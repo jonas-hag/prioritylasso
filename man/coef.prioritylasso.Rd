@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{object}{model of type prioritylasso}
+
+\item{...}{additional arguments, currently not used}
 }
 \value{
 List with the coefficients and the intercepts
