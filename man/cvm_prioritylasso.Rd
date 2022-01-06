@@ -4,10 +4,23 @@
 \alias{cvm_prioritylasso}
 \title{prioritylasso with several block specifications}
 \usage{
-cvm_prioritylasso(X, Y, weights, family, type.measure, blocks.list,
-  max.coef.list = NULL, block1.penalization = TRUE,
-  lambda.type = "lambda.min", standardize = TRUE, nfolds = 10,
-  foldid, cvoffset = FALSE, cvoffsetnfolds = 10, ...)
+cvm_prioritylasso(
+  X,
+  Y,
+  weights,
+  family,
+  type.measure,
+  blocks.list,
+  max.coef.list = NULL,
+  block1.penalization = TRUE,
+  lambda.type = "lambda.min",
+  standardize = TRUE,
+  nfolds = 10,
+  foldid,
+  cvoffset = FALSE,
+  cvoffsetnfolds = 10,
+  ...
+)
 }
 \arguments{
 \item{X}{a (nxp) matrix or data frame of predictors with observations in rows and predictors in columns.}

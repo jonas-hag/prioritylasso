@@ -15,6 +15,14 @@
 #' In case of an unpenalized first block, the covariables for the first block are not standardized.
 #' Please note that the returned coefficients are rescaled to the original scale of the covariates as provided in \code{X}.
 #' Therefore, new data in \code{predict.prioritylasso} should be on the same scale as \code{X}.
+#' 
+#' To use the method with blockwise missing data, one can set \code{handle.missingdata = ignore}.
+#' Then, to calculate the coefficients for a given block only the observations with values for this blocks are used.
+#' For the observations with missing values, the result from the previous block is used as the offset for the next block.
+#' Crossvalidated offsets are not supported with \code{handle.missingdata = ignore}.
+#' Please note that dealing with single missing values is not supported.
+#' Normally, every observation gets a unique foldid which stays the same across all blocks for the call to \code{cv.glmnet}.
+#' However when \code{handle.missingdata != none}, the foldid is set new for every block.
 #'
 #' @param X a (nxp) matrix of predictors with observations in rows and predictors in columns.
 #' @param Y n-vector giving the value of the response (either continuous, numeric-binary 0/1, or \code{Surv} object).
@@ -30,6 +38,8 @@
 #' @param foldid an optional vector of values between 1 and nfold identifying what fold each observation is in.
 #' @param cvoffset logical, whether CV should be used to estimate the offsets. Default is FALSE.
 #' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
+#' @param mcontrol controls how to deal with blockwise missing data. For details see below or \code{missing.control}
+#' @param scale.y determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}
 #' @param ... other arguments that can be passed to the function \code{cv.glmnet}.
 #'
 #' @return object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block.
@@ -44,6 +54,12 @@
 #' \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object corresponding to \code{best.blocks}.}
 #' \item{\code{coefficients}}{vector of estimated coefficients. If \code{block1.penalization = FALSE} and \code{family = gaussian} or \code{binomial}, the first entry contains an intercept.}
 #' \item{\code{call}}{the function call.}
+#' \item{\code{X}}{the original data used for the calculation}
+#' \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
+#' \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
+#' \item{\code{blocks.used.for.imputation}}{if \code{handle.missingdata = "impute.offsets"}, it contains the blocks which were used for the imputation model for every block}
+#' \item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
+#' \item{\code{blocks}}{list with the description which variables belong to which block}
 #' }
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
@@ -56,6 +72,7 @@
 #' @import glmnet
 #' @import survival
 #' @import utils
+#' @importFrom checkmate assert_class assert_logical
 #' @examples
 #' # gaussian
 #'   prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rnorm(50), family = "gaussian",
@@ -105,7 +122,10 @@ prioritylasso <- function(X,
                           foldid,
                           cvoffset = FALSE,
                           cvoffsetnfolds = 10,
+                          mcontrol = missing.control(),
+                          scale.y = FALSE,
                           ...){
+  
   
   if (packageVersion("glmnet") < "2.0.13") {
     stop("glmnet >= 2.0.13 needed for this function.", call. = FALSE)
@@ -175,7 +195,6 @@ prioritylasso <- function(X,
                  ") not equal to the number of rows of X (", nrow(X),
                  ")", sep = "")) }
   
-  
   if(!missing(foldid)){
     if (length(foldid) != nrow(X))
       stop(paste("number of elements in foldid (", length(foldid),
@@ -191,6 +210,100 @@ prioritylasso <- function(X,
     foldid = sample(rep(seq(nfolds), length = nrow(X)))
   }
   
+  # input check for handling missing data
+  assert_class(mcontrol, "pl.missing.control")
+  if (mcontrol$handle.missingdata == "none" && sum(is.na(X)) > 0) {
+    stop("X contains missing data. Please use another value than 'none' for handle.missingdata.")
+  }
+  if (mcontrol$handle.missingdata != "none" && cvoffset) {
+    stop("At the moment, a crossvalidated offset is only supported for complete data sets.")
+  }
+  
+  # issue warnings concerning missing data handling
+  if (mcontrol$handle.missingdata == "ignore" ||
+      mcontrol$handle.missingdata == "impute.offset") {
+    foldid <- NULL
+    warning(paste0("For handle.missingdata = ", mcontrol$handle.missingdata, ", the foldids of the observations are chosen individually for every block and not set globally. foldid is set to NULL"))
+  }
+  if (mcontrol$handle.missingdata == "impute.offset" &&
+      mcontrol$impute.offset.cases == "complete.cases") {
+    # calculate fraction of complete cases
+    perc_complete_cases <- sum(complete.cases(X)) / nrow(X)
+    
+    if (sum(complete.cases(X)) == 0) {
+      stop("The dataset contains no complete cases (over all blocks). Imputation of the offsets not possible.")
+    }
+    if (perc_complete_cases < mcontrol$perc.comp.cases.warning) {
+      warning(paste0("The fraction of complete cases only is ",
+                     round(perc_complete_cases, digits = 2)))
+    }
+    
+    # check that every observation with missing data only has one missing block
+    missing_index_overview <- matrix(FALSE, nrow = nrow(X),
+                                     ncol = length(blocks))
+    for (i in seq_along(blocks)) {
+      missing_index_overview[, i] <- !complete.cases(X[, blocks[[i]]])
+    }
+    for (i in seq_len(nrow(missing_index_overview))) {
+      if (sum(missing_index_overview[i, ]) > 1) {
+        stop("For impute.offset.cases = 'complete.cases', every observation must only contain one missing block.")
+      }
+    }
+    
+  }
+  
+  # cox models don't fit an intercept, therefore offset.firstblock = "intercept"
+  # can't be used
+  if (mcontrol$handle.missingdata == "ignore" &&
+      mcontrol$offset.firstblock == "intercept" &&
+      family == "cox") {
+    stop("offset.firstblock = 'intercept' can't be used with family = 'cox' as cox models don't fit an intercept")
+  }
+  
+  assert_logical(scale.y)
+  if (scale.y && family != "gaussian") {
+    stop("scale.y = TRUE can only be used with family = 'gaussian'")
+  }
+  
+  # determine if y gets scaled; if yes store the parameters
+  if (scale.y) {
+    y.scale.param <- list(mean = mean(Y), sd = sd(Y))
+    Y <- scale(Y)
+  } else {
+    y.scale.param <- NULL
+  }
+  
+  # check that there are no single missing values
+  lapply(blocks, function(block) {
+    lapply(seq_len(nrow(X)), function(i) {
+      if (sum(is.na(X[i, block])) != 0 &&
+          sum(is.na(X[i, block])) != length(block)) {
+        stop(paste0("Observation ", i, " contains a single missing value. This is not supported."))
+      }
+    })
+  })
+  
+  
+  
+  # generate a list which observations to use for which block
+  # this is important for handle.missingdata = ignore
+  observation_index <- lapply(blocks, function(block) {
+    result <- which(complete.cases(X[, block]))
+    if (length(result) == 0) {
+      NULL
+    } else {
+      result
+    }
+  })
+  missing_index <- lapply(blocks, function(block) {
+    result <- which(!complete.cases(X[, block]))
+    if (length(result) == 0) {
+      NULL
+    } else {
+      result
+    }
+  })
+  
   
   lambda.min <- list()
   lambda.ind <- list()
@@ -200,27 +313,37 @@ prioritylasso <- function(X,
   coeff <- list()
   lassoerg <- list()
   liste <- list(NULL)
+  imputation_models <- list()
+  blocks_used_for_imputation <- list()
+  missingness_pattern <- list()
+  # list for every block, if TRUE the value is missing for this block
+  missing.data <- list()
   start_block <- 1
   
   if (!block1.penalization) {
     if (length(blocks[[1]]) >= nrow(X)){
       stop("An unpenalized block 1 is only possible if the number of predictors in this block is smaller than the number of obervations.")
     }
+    current_observations <- observation_index[[1]]
+    current_missings <- missing_index[[1]]
+    missing.data[[1]] <- seq(nrow(X)) %in% current_missings
     
     if (family != "cox") {
-      block1erg <- glm(Y ~ X[,blocks[[1]]],
+      block1erg <- glm(Y[current_observations] ~ X[current_observations,
+                                                   blocks[[1]]],
                        family = family,
-                       weights = weights)
+                       weights = weights[current_observations])
       predict_type <- "link"
       
     } else {
-      block1erg <- coxph(Y ~ X[,blocks[[1]]],
-                         weights = weights,
+      block1erg <- coxph(Y[current_observations, ] ~ X[current_observations,
+                                                       blocks[[1]]],
+                         weights = weights[current_observations],
                          model = TRUE)
       predict_type <- "lp"
     }
     names(block1erg$coefficients) <- substr(names(block1erg$coefficients),
-                                            start = 17,
+                                            start = 37,
                                             nchar(names(block1erg$coefficients)))
     
     if(cvoffset) {
@@ -243,8 +366,8 @@ prioritylasso <- function(X,
         } else {
           block1ergtemp <- coxph(Y ~ ., data = datablock1[cvdiv[[count]] == 1, ],
                                  weights = weights[cvdiv[[count]] == 1])
-          
         }
+        
         names(block1ergtemp$coefficients) <- substr(names(block1ergtemp$coefficients),
                                                     start = 17,
                                                     nchar(names(block1ergtemp$coefficients)))
@@ -259,7 +382,23 @@ prioritylasso <- function(X,
     }
     
     start_block <- 2
-    liste[[2]] <- as.matrix(pred)
+    #JH change here or add check to forbid missing data in first block until
+    # further clarification
+    # calculate the new offsets
+    result_offsets <- calculate_offsets(current_missings = current_missings,
+                                     current_observations = current_observations,
+                                     mcontrol = mcontrol,
+                                     current_block = 1,
+                                     pred = pred,
+                                     liste = liste,
+                                     X = X,
+                                     blocks = blocks,
+                                     current_intercept = coef(block1erg)[1])
+    liste[[2]] <- result_offsets[["new_offsets"]]
+    imputation_models[[1]] <- result_offsets[["imputation_model"]]
+    blocks_used_for_imputation[[1]] <-
+      result_offsets[["blocks_used_for_imputation"]]
+    missingness_pattern[[1]] <- result_offsets[["missingness_pattern"]]
     lassoerg <- list(block1erg)
     coeff[[1]] <- block1erg$coefficients
   } else {
@@ -270,16 +409,23 @@ prioritylasso <- function(X,
   for (i in start_block:length(blocks)) {
     
     actual_block <- blocks[[i]]
+    current_observations <- observation_index[[i]]
+    current_missings <- missing_index[[i]]
+    missing.data[[i]] <- seq(nrow(X)) %in% current_missings
     
-    # if i == 1 for the first block, then offset is NULL
-    lassoerg[[i]] <- cv.glmnet(X[,actual_block],
-                               Y,
-                               weights,
-                               offset = liste[[i]],
+    # if i == 1 for the first block, then offset is NULL, because first list
+    # element is NULL
+    
+    # when foldid <- NULL for handle.missingdata  != "none",
+    # foldid[current_observations] still evaluates to NULL
+    lassoerg[[i]] <- cv.glmnet(X[current_observations, actual_block],
+                               Y[current_observations],
+                               weights[current_observations],
+                               offset = liste[[i]][current_observations],
                                family = family,
                                type.measure = type.measure,
                                nfolds = nfolds,
-                               foldid = foldid,
+                               foldid = foldid[current_observations],
                                standardize = standardize,
                                ...)
     
@@ -355,23 +501,42 @@ prioritylasso <- function(X,
     }
     else {
       pred <- predict(lassoerg[[i]],
-                      newx = X[, actual_block],
-                      newoffset = liste[[i]],
+                      newx = X[current_observations, actual_block],
+                      newoffset = liste[[i]][current_observations],
                       s = lambda_to_use,
                       type = "link")
     }
     
     # store the results for the current block
-    liste[[i+1]] <- as.matrix(pred)
+    # calculate the new offsets
+    result_offsets <- calculate_offsets(current_missings = current_missings,
+                                     current_observations = current_observations,
+                                     mcontrol = mcontrol,
+                                     current_block = i,
+                                     pred = pred,
+                                     liste = liste,
+                                     X = X,
+                                     blocks = blocks,
+                                     current_intercept =
+                                       lassoerg[[i]]$glmnet.fit$a0[lambda.ind[[i]]])
+    liste[[i+1]] <- result_offsets[["new_offsets"]]
+    imputation_models[[i]] <- result_offsets[["imputation_model"]]
+    blocks_used_for_imputation[[i]] <-
+      result_offsets[["blocks_used_for_imputation"]]
+    missingness_pattern[[i]] <- result_offsets[["missingness_pattern"]]
     
     min.cvm[i] <- lassoerg[[i]]$cvm[lambda.ind[[i]]]
     nzero[i] <- lassoerg[[i]]$nzero[lambda.ind[[i]]]
     glmnet.fit[[i]] <- lassoerg[[i]]$glmnet.fit
     coeff[[i]] <- glmnet.fit[[i]]$beta[,lambda.ind[[i]]]
-    
   }
   
+  
   name <- lassoerg[[i]]$name
+  
+  if (mcontrol$handle.missingdata != "impute.offset") {
+    imputation_models <- NULL
+  }
   
   
   
@@ -385,11 +550,16 @@ prioritylasso <- function(X,
                     name = name,
                     block1unpen = block1erg,
                     coefficients = unlist(coeff),
-                    call = match.call())
+                    call = match.call(),
+                    X = X,
+                    missing.data = missing.data,
+                    imputation.models = imputation_models,
+                    blocks.used.for.imputation = blocks_used_for_imputation,
+                    missingness.pattern = missingness_pattern,
+                    y.scale.param = y.scale.param,
+                    blocks = blocks)
   
   class(finallist) <- c("prioritylasso", class(finallist))
-  
-  
   return(finallist)
   
 }

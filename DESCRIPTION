@@ -8,8 +8,9 @@ Description: Fits successive Lasso models for several blocks of (omics) data wit
 Depends: R (>= 2.10.0)
 License: GPL-2
 LazyData: TRUE
-Imports: survival, glmnet, utils
-RoxygenNote: 6.1.1
+Imports: survival, glmnet, utils, checkmate, rlang
+RoxygenNote: 7.1.1
+Encoding: UTF-8
 Suggests: testthat, knitr, rmarkdown, pROC
 VignetteBuilder: knitr
 NeedsCompilation: no
