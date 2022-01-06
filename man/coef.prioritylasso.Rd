@@ -4,10 +4,10 @@
 \alias{coef.prioritylasso}
 \title{Extract coefficients from a prioritylasso object}
 \usage{
-\method{coef}{prioritylasso}(model)
+\method{coef}{prioritylasso}(object, ...)
 }
 \arguments{
-\item{model}{}
+\item{object}{model of type prioritylasso}
 }
 \value{
 List with the coefficients and the intercepts
