@@ -184,24 +184,30 @@ pl4$block1unpen$call <- NULL
 
 
 # load the comparison data from the CRAN version
-if (grepl("prioritylasso$", getwd())) {
-  path <- "data/refactoring_results/"
-} else {
-  path <- "../../data/refactoring_results/"
-}
-
-pl1_cran <- readRDS(paste0(path, "pl1_cran.rds"))
-pl1a_cran <- readRDS(paste0(path, "pl1a_cran.rds"))
-pl1b_cran <- readRDS(paste0(path, "pl1b_cran.rds"))
-pl2_cran <- readRDS(paste0(path, "pl2_cran.rds"))
-pl2a_cran <- readRDS(paste0(path, "pl2a_cran.rds"))
-pl2b_cran <- readRDS(paste0(path, "pl2b_cran.rds"))
-pl3_cran <- readRDS(paste0(path, "pl3_cran.rds"))
-pl3a_cran <- readRDS(paste0(path, "pl3a_cran.rds"))
-pl3b_cran <- readRDS(paste0(path, "pl3b_cran.rds"))
-pl4_cran <- readRDS(paste0(path, "pl4_cran.rds"))
-pl5a_cran <- readRDS(paste0(path, "pl5a_cran.rds"))
-pl5b_cran <- readRDS(paste0(path, "pl5b_cran.rds"))
+path <- system.file("refactoring_results/pl1_cran.rds", package = "prioritylasso")
+pl1_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl1a_cran.rds", package = "prioritylasso")
+pl1a_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl1b_cran.rds", package = "prioritylasso")
+pl1b_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl2_cran.rds", package = "prioritylasso")
+pl2_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl2a_cran.rds", package = "prioritylasso")
+pl2a_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl2b_cran.rds", package = "prioritylasso")
+pl2b_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl3_cran.rds", package = "prioritylasso")
+pl3_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl3a_cran.rds", package = "prioritylasso")
+pl3a_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl3b_cran.rds", package = "prioritylasso")
+pl3b_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl4_cran.rds", package = "prioritylasso")
+pl4_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl5a_cran.rds", package = "prioritylasso")
+pl5a_cran <- readRDS(path)
+path <- system.file("refactoring_results/pl5b_cran.rds", package = "prioritylasso")
+pl5b_cran <- readRDS(path)
 
 pl1b_cran$block1unpen$data <- NULL
 pl2_cran$block1unpen$data <- NULL

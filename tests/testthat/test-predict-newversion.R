@@ -187,19 +187,26 @@ pl_binom_info <- prioritylasso(X = x_data_info,
 
 
 # load the comparison data from the CRAN version
-path <- "../../data/data_predict_test/"
-
-
-pred_pl1_cran <- readRDS(paste0(path, "pred_pl1_cran.rds"))
-pred_pl1a_cran <- readRDS(paste0(path, "pred_pl1a_cran.rds"))
-pred_pl1b_cran <- readRDS(paste0(path, "pred_pl1b_cran.rds"))
-pred_pl2_cran <- readRDS(paste0(path, "pred_pl2_cran.rds"))
-pred_pl2a_cran <- readRDS(paste0(path, "pred_pl2a_cran.rds"))
-pred_pl2b_cran <- readRDS(paste0(path, "pred_pl2b_cran.rds"))
-pred_pl3b_cran <- readRDS(paste0(path, "pred_pl3b_cran.rds"))
-pred_pl4_cran <- readRDS(paste0(path, "pred_pl4_cran.rds"))
-pred_pl5a_cran <- readRDS(paste0(path, "pred_pl5a_cran.rds"))
-pred_pl5b_cran <- readRDS(paste0(path, "pred_pl5b_cran.rds"))
+path <- test_path("data_predict_test", "pred_pl1_cran.rds")
+pred_pl1_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl1a_cran.rds")
+pred_pl1a_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl1b_cran.rds")
+pred_pl1b_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl2_cran.rds")
+pred_pl2_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl2a_cran.rds")
+pred_pl2a_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl2b_cran.rds")
+pred_pl2b_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl3b_cran.rds")
+pred_pl3b_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl4_cran.rds")
+pred_pl4_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl5a_cran.rds")
+pred_pl5a_cran <- readRDS(path)
+path <- test_path("data_predict_test", "pred_pl5b_cran.rds")
+pred_pl5b_cran <- readRDS(path)
 
 
 context("tests for the further developed predict.prioritylasso")
