@@ -32,23 +32,23 @@ pl1b <- prioritylasso(X = x_data, Y = rnorm(50), family = "gaussian", type.measu
 pred_pl1b <- predict(pl1b, newdata = x_data, type = "response")
 
 set.seed(1234)
-pl1_miss_comp <- prioritylasso(X = x_data_miss_b2, Y = rnorm(50), family = "gaussian", type.measure = "mse",
-                               blocks = list(block1=1:75, block2=76:200, block3=201:500),
-                               block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5,
-                               mcontrol = missing.control(handle.missingdata = "impute.offset"))
+pl1_miss_comp <- suppressWarnings(prioritylasso(X = x_data_miss_b2, Y = rnorm(50), family = "gaussian", type.measure = "mse",
+                                                blocks = list(block1=1:75, block2=76:200, block3=201:500),
+                                                block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5,
+                                                mcontrol = missing.control(handle.missingdata = "impute.offset")))
 
 set.seed(1234)
-pl1_miss_ign <- prioritylasso(X = x_data_miss_b12, Y = rnorm(50), family = "gaussian", type.measure = "mse",
-                              blocks = list(block1=1:75, block2=76:200, block3=201:500),
-                              block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5,
-                              mcontrol = missing.control(handle.missingdata = "ignore"))
+pl1_miss_ign <- suppressWarnings(prioritylasso(X = x_data_miss_b12, Y = rnorm(50), family = "gaussian", type.measure = "mse",
+                                               blocks = list(block1=1:75, block2=76:200, block3=201:500),
+                                               block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5,
+                                               mcontrol = missing.control(handle.missingdata = "ignore")))
 
 set.seed(1234)
-pl1_miss_avlb <- prioritylasso(X = x_data_miss_b123, Y = rnorm(50), family = "gaussian", type.measure = "mse",
-                               blocks = list(block1=1:75, block2=76:200, block3=201:500),
-                               block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5,
-                               mcontrol = missing.control(handle.missingdata = "impute.offset",
-                                                          impute.offset.cases = "available.cases"))
+pl1_miss_avlb <- suppressWarnings(prioritylasso(X = x_data_miss_b123, Y = rnorm(50), family = "gaussian", type.measure = "mse",
+                                                blocks = list(block1=1:75, block2=76:200, block3=201:500),
+                                                block1.penalization = TRUE, lambda.type = "lambda.1se", standardize = TRUE, nfolds = 5,
+                                                mcontrol = missing.control(handle.missingdata = "impute.offset",
+                                                                           impute.offset.cases = "available.cases")))
 
 ###
 
@@ -83,10 +83,10 @@ pred_pl2b <- predict(pl2b, newdata = x_data, type = "response")
 
 
 set.seed(1234)
-pl3b <- prioritylasso(X = x_data, Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
-                      type.measure = "auc", blocks = list(block1=1:45, block2=46:200, block3=201:500),
-                      block1.penalization = TRUE, standardize = TRUE, nfolds = 4,
-                      cvoffset = TRUE)
+pl3b <- suppressWarnings(prioritylasso(X = x_data, Y = rbinom(n=50, size=1, prob=0.5), family = "binomial",
+                                       type.measure = "auc", blocks = list(block1=1:45, block2=46:200, block3=201:500),
+                                       block1.penalization = TRUE, standardize = TRUE, nfolds = 4,
+                                       cvoffset = TRUE))
 pred_pl3b <- predict(pl3b, newdata = x_data, type = "response")
 
 
@@ -164,21 +164,21 @@ pl_gauss_info <- prioritylasso(X = x_data_info,
                                standardize = TRUE,
                                nfolds = 5)
 
-pl_gauss_info_miss_comp <- prioritylasso(X = x_data_info_miss_b1,
-                               Y = y_data_gauss,
-                               family = "gaussian",
-                               type.measure = "mse",
-                               blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
-                               block1.penalization = TRUE,
-                               lambda.type = "lambda.1se",
-                               standardize = TRUE,
-                               nfolds = 5,
-                               mcontrol = missing.control(handle.missingdata = "impute.offset"))
+pl_gauss_info_miss_comp <- suppressWarnings(prioritylasso(X = x_data_info_miss_b1,
+                                                          Y = y_data_gauss,
+                                                          family = "gaussian",
+                                                          type.measure = "mse",
+                                                          blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
+                                                          block1.penalization = TRUE,
+                                                          lambda.type = "lambda.1se",
+                                                          standardize = TRUE,
+                                                          nfolds = 5,
+                                                          mcontrol = missing.control(handle.missingdata = "impute.offset")))
 
 pl_binom_info <- prioritylasso(X = x_data_info,
                                Y = y_data_bin,
                                family = "binomial",
-                               type.measure = "mse",
+                               type.measure = "class",
                                blocks = list(block1 = 1:50, block2 = 51:100, block3 = 101:150),
                                block1.penalization = TRUE,
                                lambda.type = "lambda.1se",
@@ -365,10 +365,10 @@ test_that("handle.missingtestdata is handled correctly", {
                        handle.missingtestdata = "impute.block"))
   
   # impute.block available
-  expect_is(predict(pl1_miss_avlb, newdata = x_data_miss_b1, type = "response",
-                    handle.missingtestdata = "impute.block"), "matrix")
-  expect_is(predict(pl1_miss_avlb, newdata = x_data_miss_b2, type = "response",
-                    handle.missingtestdata = "impute.block"), "matrix")
+  expect_is(suppressWarnings(predict(pl1_miss_avlb, newdata = x_data_miss_b1, type = "response",
+                                     handle.missingtestdata = "impute.block")), "matrix")
+  expect_is(suppressWarnings(predict(pl1_miss_avlb, newdata = x_data_miss_b2, type = "response",
+                                     handle.missingtestdata = "impute.block")), "matrix")
   expect_is(predict(pl1_miss_avlb, newdata = x_data_miss_b12, type = "response",
                     handle.missingtestdata = "impute.block"), "matrix")
   expect_is(predict(pl1_miss_avlb, newdata = x_data_miss_b123, type = "response",
@@ -436,9 +436,9 @@ test_that("use.blocks is handled correctly", {
                predict(pl_gauss_info, newdata = x_data_info, type = "response",
                        use.blocks = 1:3))
   expect_difference(predict(pl_gauss_info, newdata = x_data_info, type = "response",
-                       use.blocks = "all"),
-               predict(pl_gauss_info, newdata = x_data_info, type = "response",
-                       use.blocks = 1))
+                            use.blocks = "all"),
+                    predict(pl_gauss_info, newdata = x_data_info, type = "response",
+                            use.blocks = 1))
   expect_difference(predict(pl_gauss_info, newdata = x_data_info, type = "response",
                             use.blocks = "all"),
                     predict(pl_gauss_info, newdata = x_data_info, type = "response",
