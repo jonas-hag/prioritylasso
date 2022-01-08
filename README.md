@@ -44,6 +44,39 @@ results <- prioritylasso(
 Binary outcome data and Cox models are also possible. For a better overview,
 have a look at the [introductory vignette](vignettes/prioritylasso_vignette.Rmd).
 
+### Blockwise missing data
+A special type of missing data is blockwise missing data and occurs when the
+data contains "blocks", e.g. several variables that belong together like
+clinical measurements, mRNA sequencing data, SNP data etc. This means that for
+some observations not all blocks are observed. To deal with this type of
+missingness, prioritylasso provides the following options to fit a model to a
+data set:
+
+- `ignore`: the Lasso model for every block is only fitted
+with the observations that have no missing values for this block. For
+observations with the current block missing, the offset from the previous
+block is carried forward
+- `impute`: the Lasso model for every block is only fitted
+with the observations that have no missing values for this block. For
+observations with the current block missing, the offset from the previous
+block is imputed. The imputation model is either based on all other blocks or
+it is tried to use as much information as possible for more complex missingness
+patterns.
+
+These options can be set in the function `missing.control`.
+
+If a prioritylasso model should be used to predict on data with blockwise missing
+data, the following options are available:
+
+- `set.zero`: ignores the missing data for the calculation of the prediction
+(the missing value is set to zero)
+- `impute.block`: use an imputation model to impute the offset of a missing
+block. In order to work, the prioritylasso model must be trained with the option
+`impute` and the missingness patterns in the test data have to be the same as in
+the train data
+
+These options can be set in `handle.missingtestdata` of the `predict` function.
+
 ## Paper
 For more information about the method, see the following paper:
 
