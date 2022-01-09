@@ -3,22 +3,10 @@
 #' Runs prioritylasso for a list of block specifications and gives the best results
 #' in terms of cv error.
 #'
-#' @param X a (nxp) matrix or data frame of predictors with observations in rows and predictors in columns.
-#' @param Y n-vector giving the value of the response (either continuous, numeric-binary 0/1, or \code{Surv} object).
-#' @param weights observation weights. Default is 1 for each observation.
-#' @param family should be "gaussian" for continuous \code{Y}, "binomial" for binary \code{Y}, "cox" for \code{Y} of type \code{Surv}.
-#' @param type.measure The accuracy/error measure computed in cross-validation. It should be "class" (classification error) or "auc" (area under the ROC curve) if \code{family="binomial"}, "mse" (mean squared error) if \code{family="gaussian"} and "deviance" if \code{family="cox"} which uses the partial-likelihood.
+#' @inheritParams prioritylasso
 #' @param blocks.list list of the format \code{list(list(bp1=...,bp2=...,), list(bp1=,...,bp2=...,), ...)}. For the specification of the entries, see \code{\link[prioritylasso]{prioritylasso}}.
 #' @param max.coef.list list of \code{max.coef} vectors. The first entries are omitted if \code{block1.penalization = FALSE}. Default is \code{NULL}.
-#' @param block1.penalization whether the first block should be penalized. Default is TRUE.
-#' @param lambda.type specifies the value of lambda used for the predictions. \code{lambda.min} gives lambda with minimum cross-validated errors. \code{lambda.1se} gives the largest value of lambda such that error is within 1 standard error of the minimum. Note that \code{lambda.1se} can only be chosen without restrictions of \code{max.coef}.
-#' @param standardize logical, whether the predictors should be standardized or not. Default is TRUE.
-#' @param nfolds the number of CV procedure folds.
-#' @param foldid an optional vector of values between 1 and nfold identifying what fold each observation is in.
-#' @param cvoffset logical, whether CV should be used to estimate the offsets. Default is FALSE.
-#' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
-
-#' @param ... Other arguments that can be passed to the function \code{prioritylasso}.
+#' @param ... other arguments that can be passed to the function \code{prioritylasso}.
 #'
 #' @return object of class \code{cvm_prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block of the best result.
 #' \describe{
@@ -57,9 +45,21 @@
 #'
 
 
-cvm_prioritylasso <- function(X, Y, weights, family, type.measure, blocks.list, max.coef.list = NULL,
-                              block1.penalization = TRUE, lambda.type = "lambda.min",
-                              standardize = TRUE, nfolds = 10, foldid, cvoffset = FALSE, cvoffsetnfolds = 10, ...){
+cvm_prioritylasso <- function(X,
+                              Y,
+                              weights,
+                              family,
+                              type.measure,
+                              blocks.list,
+                              max.coef.list = NULL,
+                              block1.penalization = TRUE,
+                              lambda.type = "lambda.min",
+                              standardize = TRUE,
+                              nfolds = 10,
+                              foldid,
+                              cvoffset = FALSE,
+                              cvoffsetnfolds = 10,
+                              ...){
 
   if(!is.null(max.coef.list)){
     if(length(blocks.list) != length(max.coef.list)){stop("blocks.list and max.coef.list must have the same length.")}
