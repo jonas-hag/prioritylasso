@@ -51,10 +51,10 @@ cvm_prioritylasso(
 
 \item{cvoffsetnfolds}{the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.}
 
-\item{...}{Other arguments that can be passed to the function \code{cv.glmnet}.}
+\item{...}{Other arguments that can be passed to the function \code{prioritylasso}.}
 }
 \value{
-object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block of the best result.
+object of class \code{cvm_prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block of the best result.
 \describe{
 \item{\code{lambda.ind}}{list with indices of lambda for \code{lambda.type}.}
 \item{\code{lambda.type}}{type of lambda which is used for the predictions.}
@@ -66,6 +66,7 @@ object of class \code{prioritylasso} with the following elements. If these eleme
 \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object.}
 \item{\code{best.blocks}}{character vector with the indices of the best block specification.}
 \item{\code{best.max.coef}}{vector with the number of maximal coefficients corresponding to \code{best.blocks}.}
+\item{\code{best.model}}{complete \code{prioritylasso} model of the best solution.}
 \item{\code{coefficients}}{coefficients according to the results obtained with \code{best.blocks}.}
 \item{\code{call}}{the function call.}
 }

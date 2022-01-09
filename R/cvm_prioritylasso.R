@@ -18,9 +18,9 @@
 #' @param cvoffset logical, whether CV should be used to estimate the offsets. Default is FALSE.
 #' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
 
-#' @param ... Other arguments that can be passed to the function \code{cv.glmnet}.
+#' @param ... Other arguments that can be passed to the function \code{prioritylasso}.
 #'
-#' @return object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block of the best result.
+#' @return object of class \code{cvm_prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block of the best result.
 #' \describe{
 #' \item{\code{lambda.ind}}{list with indices of lambda for \code{lambda.type}.}
 #' \item{\code{lambda.type}}{type of lambda which is used for the predictions.}
@@ -32,6 +32,7 @@
 #' \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object.}
 #' \item{\code{best.blocks}}{character vector with the indices of the best block specification.}
 #' \item{\code{best.max.coef}}{vector with the number of maximal coefficients corresponding to \code{best.blocks}.}
+#' \item{\code{best.model}}{complete \code{prioritylasso} model of the best solution.}
 #' \item{\code{coefficients}}{coefficients according to the results obtained with \code{best.blocks}.}
 #' \item{\code{call}}{the function call.}
 #' }
@@ -99,15 +100,21 @@ cvm_prioritylasso <- function(X, Y, weights, family, type.measure, blocks.list, 
     best.blocks <- c(best.blocks, paste("bp",k," = ", bfv[[k]],":",blv[[k]] + bfv[[k]] - 1, sep=""))
   }
 
-  finallist <- list(lambda.ind = all_res[[ind.best.pr]]$lambda.ind, lambda.type = lambda.type,
+  finallist <- list(lambda.ind = all_res[[ind.best.pr]]$lambda.ind,
+                    lambda.type = lambda.type,
                     lambda.min = all_res[[ind.best.pr]]$lambda.min,
-                    min.cvm = all_res[[ind.best.pr]]$min.cvm, nzero = all_res[[ind.best.pr]]$nzero,
-                    glmnet.fit = all_res[[ind.best.pr]]$glmnet.fit, name = all_res[[ind.best.pr]]$name,
-                    block1unpen = all_res[[ind.best.pr]]$block1unpen, best.blocks = best.blocks,
-                    best.max.coef = max.coef.list[[ind.best.pr]], coefficients = all_res[[ind.best.pr]]$coefficients,
+                    min.cvm = all_res[[ind.best.pr]]$min.cvm,
+                    nzero = all_res[[ind.best.pr]]$nzero,
+                    glmnet.fit = all_res[[ind.best.pr]]$glmnet.fit,
+                    name = all_res[[ind.best.pr]]$name,
+                    block1unpen = all_res[[ind.best.pr]]$block1unpen,
+                    best.blocks = best.blocks,
+                    best.max.coef = max.coef.list[[ind.best.pr]],
+                    best.model = all_res[[ind.best.pr]],
+                    coefficients = all_res[[ind.best.pr]]$coefficients,
                     call = match.call())
 
-  class(finallist) <- "prioritylasso"
+  class(finallist) <- c("cvm_prioritylasso", class(finallist))
 
   return(finallist)
 
