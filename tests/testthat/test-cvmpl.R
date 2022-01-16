@@ -96,7 +96,9 @@ test_that("cvm_prioritylasso contains the correct return elements", {
   expect_equal(names(cvm_miss), c("lambda.ind", "lambda.type", "lambda.min",
                                   "min.cvm", "nzero", "glmnet.fit",
                                   "name", "block1unpen", "best.blocks",
+                                  "best.blocks.indices",
                                   "best.max.coef", "best.model","coefficients",
                                   "call"))
   expect_s3_class(cvm_miss[["best.model"]], "prioritylasso")
+  expect_type(cvm_miss[["best.blocks.indices"]], "list")
 })

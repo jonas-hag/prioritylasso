@@ -65,6 +65,7 @@ object of class \code{cvm_prioritylasso} with the following elements. If these e
 \item{\code{name}}{a text string indicating type of measure.}
 \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object.}
 \item{\code{best.blocks}}{character vector with the indices of the best block specification.}
+\item{\code{best.blocks.indices}}{list with the indices of the best block specification ordered by best to worst.}
 \item{\code{best.max.coef}}{vector with the number of maximal coefficients corresponding to \code{best.blocks}.}
 \item{\code{best.model}}{complete \code{prioritylasso} model of the best solution.}
 \item{\code{coefficients}}{coefficients according to the results obtained with \code{best.blocks}.}

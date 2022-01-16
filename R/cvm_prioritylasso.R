@@ -19,6 +19,7 @@
 #' \item{\code{name}}{a text string indicating type of measure.}
 #' \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object.}
 #' \item{\code{best.blocks}}{character vector with the indices of the best block specification.}
+#' \item{\code{best.blocks.indices}}{list with the indices of the best block specification ordered by best to worst.}
 #' \item{\code{best.max.coef}}{vector with the number of maximal coefficients corresponding to \code{best.blocks}.}
 #' \item{\code{best.model}}{complete \code{prioritylasso} model of the best solution.}
 #' \item{\code{coefficients}}{coefficients according to the results obtained with \code{best.blocks}.}
@@ -96,8 +97,11 @@ cvm_prioritylasso <- function(X,
   bfv <- lapply(best.var, '[[', 1)
   blv <- lapply(best.var, length)
   best.blocks <- vector()
+  best.blocks.indices <- list()
   for(k in 1:length(bfv)){
     best.blocks <- c(best.blocks, paste("bp",k," = ", bfv[[k]],":",blv[[k]] + bfv[[k]] - 1, sep=""))
+    best.blocks.indices[[k]] <- seq(from = bfv[[k]], to = blv[[k]] + bfv[[k]] - 1,
+                                    by = 1)
   }
 
   finallist <- list(lambda.ind = all_res[[ind.best.pr]]$lambda.ind,
@@ -109,6 +113,7 @@ cvm_prioritylasso <- function(X,
                     name = all_res[[ind.best.pr]]$name,
                     block1unpen = all_res[[ind.best.pr]]$block1unpen,
                     best.blocks = best.blocks,
+                    best.blocks.indices = best.blocks.indices,
                     best.max.coef = max.coef.list[[ind.best.pr]],
                     best.model = all_res[[ind.best.pr]],
                     coefficients = all_res[[ind.best.pr]]$coefficients,
