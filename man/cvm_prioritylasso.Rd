@@ -23,7 +23,7 @@ cvm_prioritylasso(
 )
 }
 \arguments{
-\item{X}{a (nxp) matrix or data frame of predictors with observations in rows and predictors in columns.}
+\item{X}{a (nxp) matrix of predictors with observations in rows and predictors in columns.}
 
 \item{Y}{n-vector giving the value of the response (either continuous, numeric-binary 0/1, or \code{Surv} object).}
 
@@ -31,7 +31,7 @@ cvm_prioritylasso(
 
 \item{family}{should be "gaussian" for continuous \code{Y}, "binomial" for binary \code{Y}, "cox" for \code{Y} of type \code{Surv}.}
 
-\item{type.measure}{The accuracy/error measure computed in cross-validation. It should be "class" (classification error) or "auc" (area under the ROC curve) if \code{family="binomial"}, "mse" (mean squared error) if \code{family="gaussian"} and "deviance" if \code{family="cox"} which uses the partial-likelihood.}
+\item{type.measure}{accuracy/error measure computed in cross-validation. It should be "class" (classification error) or "auc" (area under the ROC curve) if \code{family="binomial"}, "mse" (mean squared error) if \code{family="gaussian"} and "deviance" if \code{family="cox"} which uses the partial-likelihood.}
 
 \item{blocks.list}{list of the format \code{list(list(bp1=...,bp2=...,), list(bp1=,...,bp2=...,), ...)}. For the specification of the entries, see \code{\link[prioritylasso]{prioritylasso}}.}
 
@@ -39,7 +39,7 @@ cvm_prioritylasso(
 
 \item{block1.penalization}{whether the first block should be penalized. Default is TRUE.}
 
-\item{lambda.type}{specifies the value of lambda used for the predictions. \code{lambda.min} gives lambda with minimum cross-validated errors. \code{lambda.1se} gives the largest value of lambda such that error is within 1 standard error of the minimum. Note that \code{lambda.1se} can only be chosen without restrictions of \code{max.coef}.}
+\item{lambda.type}{specifies the value of lambda used for the predictions. \code{lambda.min} gives lambda with minimum cross-validated errors. \code{lambda.1se} gives the largest value of lambda such that the error is within 1 standard error of the minimum. Note that \code{lambda.1se} can only be chosen without restrictions of \code{max.coef}.}
 
 \item{standardize}{logical, whether the predictors should be standardized or not. Default is TRUE.}
 
@@ -51,10 +51,10 @@ cvm_prioritylasso(
 
 \item{cvoffsetnfolds}{the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.}
 
-\item{...}{Other arguments that can be passed to the function \code{cv.glmnet}.}
+\item{...}{other arguments that can be passed to the function \code{prioritylasso}.}
 }
 \value{
-object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block of the best result.
+object of class \code{cvm_prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block of the best result.
 \describe{
 \item{\code{lambda.ind}}{list with indices of lambda for \code{lambda.type}.}
 \item{\code{lambda.type}}{type of lambda which is used for the predictions.}
@@ -65,7 +65,9 @@ object of class \code{prioritylasso} with the following elements. If these eleme
 \item{\code{name}}{a text string indicating type of measure.}
 \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object.}
 \item{\code{best.blocks}}{character vector with the indices of the best block specification.}
+\item{\code{best.blocks.indices}}{list with the indices of the best block specification ordered by best to worst.}
 \item{\code{best.max.coef}}{vector with the number of maximal coefficients corresponding to \code{best.blocks}.}
+\item{\code{best.model}}{complete \code{prioritylasso} model of the best solution.}
 \item{\code{coefficients}}{coefficients according to the results obtained with \code{best.blocks}.}
 \item{\code{call}}{the function call.}
 }
