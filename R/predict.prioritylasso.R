@@ -63,7 +63,11 @@ predict.prioritylasso <- function(object,
   }
   
   if (is.null(newdata)) {
-    newdata <- as.matrix(object$X)
+    if (class(object$X) != "matrix" || is.na(object$X)) {
+      stop("No data provided by either the prioritylasso object or newdata.")
+    } else {
+      newdata <- as.matrix(object$X)
+    }
   } else {
     assert(check_matrix(newdata), check_data_frame(newdata))
     newdata <- data.matrix(newdata)

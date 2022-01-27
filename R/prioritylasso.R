@@ -40,6 +40,7 @@
 #' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
 #' @param mcontrol controls how to deal with blockwise missing data. For details see below or \code{missing.control}
 #' @param scale.y determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}
+#' @param return.x logical, determines if the input data should be returned by \code{prioritylasso}. Default is \code{TRUE}
 #' @param ... other arguments that can be passed to the function \code{cv.glmnet}.
 #'
 #' @return object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block.
@@ -124,6 +125,7 @@ prioritylasso <- function(X,
                           cvoffsetnfolds = 10,
                           mcontrol = missing.control(),
                           scale.y = FALSE,
+                          return.x = TRUE,
                           ...){
   
   
@@ -538,7 +540,11 @@ prioritylasso <- function(X,
     imputation_models <- NULL
   }
   
-  
+  if (return.x) {
+    x_return_value <- X
+  } else {
+    x_return_value <- NA
+  }
   
   
   finallist <- list(lambda.ind = lambda.ind,
@@ -551,7 +557,7 @@ prioritylasso <- function(X,
                     block1unpen = block1erg,
                     coefficients = unlist(coeff),
                     call = match.call(),
-                    X = X,
+                    X = x_return_value,
                     missing.data = missing.data,
                     imputation.models = imputation_models,
                     blocks.used.for.imputation = blocks_used_for_imputation,

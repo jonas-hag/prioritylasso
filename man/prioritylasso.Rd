@@ -21,6 +21,7 @@ prioritylasso(
   cvoffsetnfolds = 10,
   mcontrol = missing.control(),
   scale.y = FALSE,
+  return.x = TRUE,
   ...
 )
 }
@@ -56,6 +57,8 @@ prioritylasso(
 \item{mcontrol}{controls how to deal with blockwise missing data. For details see below or \code{missing.control}}
 
 \item{scale.y}{determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}}
+
+\item{return.x}{logical, determines if the input data should be returned by \code{prioritylasso}. Default is \code{TRUE}}
 
 \item{...}{other arguments that can be passed to the function \code{cv.glmnet}.}
 }
