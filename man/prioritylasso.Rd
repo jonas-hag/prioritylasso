@@ -75,12 +75,14 @@ object of class \code{prioritylasso} with the following elements. If these eleme
 \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object corresponding to \code{best.blocks}.}
 \item{\code{coefficients}}{vector of estimated coefficients. If \code{block1.penalization = FALSE} and \code{family = gaussian} or \code{binomial}, the first entry contains an intercept.}
 \item{\code{call}}{the function call.}
-\item{\code{X}}{the original data used for the calculation}
+\item{\code{X}}{the original data used for the calculation or \code{NA} if \code{return.x = FALSE}}
 \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
 \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
 \item{\code{blocks.used.for.imputation}}{if \code{handle.missingdata = "impute.offsets"}, it contains the blocks which were used for the imputation model for every block}
 \item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
 \item{\code{blocks}}{list with the description which variables belong to which block}
+\item{\code{mcontrol}}{the missing control settings used}
+\item{\code{family}}{the family of the fitted data}
 }
 }
 \description{
