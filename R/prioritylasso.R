@@ -63,6 +63,7 @@
 #' \item{\code{blocks}}{list with the description which variables belong to which block}
 #' \item{\code{mcontrol}}{the missing control settings used}
 #' \item{\code{family}}{the family of the fitted data}
+#' \item{\code{dim.x}}{the dimension of the used training data}
 #' }
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
@@ -567,7 +568,8 @@ prioritylasso <- function(X,
                     y.scale.param = y.scale.param,
                     blocks = blocks,
                     mcontrol = mcontrol,
-                    family = family)
+                    family = family,
+                    dim.x = dim(X))
   
   class(finallist) <- c("prioritylasso", class(finallist))
   return(finallist)

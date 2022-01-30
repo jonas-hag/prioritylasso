@@ -83,6 +83,7 @@ object of class \code{prioritylasso} with the following elements. If these eleme
 \item{\code{blocks}}{list with the description which variables belong to which block}
 \item{\code{mcontrol}}{the missing control settings used}
 \item{\code{family}}{the family of the fitted data}
+\item{\code{dim.x}}{the dimension of the used training data}
 }
 }
 \description{
