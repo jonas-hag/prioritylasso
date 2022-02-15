@@ -173,11 +173,6 @@ prioritylasso <- function(X,
       warning("type.measure is set to partial likelihood.")
     type.measure <- "deviance"
   }
-  if (family == "binomial" & !is.element(type.measure, c("auc",
-                                                         "class"))) {
-    warning("type.measure is set to class.")
-    type.measure <- "class"
-  }
   
   if(type.measure == "auc") {
     if(cvoffset) {
