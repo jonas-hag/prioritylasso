@@ -5,3 +5,4 @@
 prioritylasso.Rproj
 add_files/
 tests/testthat/test-plnew.R
+inst/doc
