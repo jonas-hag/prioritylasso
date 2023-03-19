@@ -63,7 +63,7 @@ predict.prioritylasso <- function(object,
   }
   
   if (is.null(newdata)) {
-    if (class(object$X) != "matrix" || is.na(object$X)) {
+    if (!inherits(object$X, "matrix") || is.na(object$X)) {
       stop("No data provided by either the prioritylasso object or newdata.")
     } else {
       newdata <- as.matrix(object$X)
@@ -392,7 +392,7 @@ predict.prioritylasso <- function(object,
             # check if the current block should be used for prediction
             if (j %in% use.blocks || use.blocks[1] == "all") {
               # check if a model exists or if it is just a constant
-              if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "cv.glmnet") {
+              if (inherits(object$imputation.models[[j]][[missing_pattern_overview[i, j]]], "cv.glmnet")) {
                 imputed_values[index_observation[i]] <-
                   predict(object$imputation.models[[j]][[missing_pattern_overview[i, j]]],
                           newx = newdata[index_observation[i],
@@ -402,7 +402,7 @@ predict.prioritylasso <- function(object,
                   imputed_values[index_observation[i]]
                 
               } else {
-                if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "numeric") {
+                if (inherits(object$imputation.models[[j]][[missing_pattern_overview[i, j]]], "numeric")) {
                   imputed_values[index_observation[i]] <-
                     object$imputation.models[[j]][[missing_pattern_overview[i, j]]] +
                     imputed_values[index_observation[i]]
