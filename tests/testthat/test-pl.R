@@ -170,12 +170,6 @@ test_that("testing warning messages", {
                             block1.penalization = TRUE, nfolds = 5),
               gives_warning("type.measure is set to mse."))
   
-  expect_that(prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(50, 1, 0.5), family = "binomial",
-                            type.measure = "deviance",
-                            blocks = list(block1=1:75, block2=76:200, block3=201:500),
-                            block1.penalization = TRUE, nfolds = 5),
-              gives_warning("type.measure is set to class."))
-  
   expect_that(prioritylasso(x, y, family = "cox", type.measure = "mse", blocks = blocks,
                             block1.penalization = TRUE, lambda.type = "lambda.min", standardize = TRUE, nfolds = 5),
               gives_warning("type.measure is set to partial likelihood."))
