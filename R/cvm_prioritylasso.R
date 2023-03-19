@@ -72,10 +72,21 @@ cvm_prioritylasso <- function(X,
   cvmin = +Inf
 
   for(j in 1:nlist){
-    all_res[[j]] <- prioritylasso(X, Y, weights, family = family, type.measure = type.measure, blocks = blocks.list[[j]],
-                                  max.coef = max.coef.list[[j]], block1.penalization = block1.penalization,
-                                  lambda.type = lambda.type, standardize = standardize, nfolds = nfolds, foldid,
-                                  cvoffset = cvoffset, cvoffsetnfolds = cvoffsetnfolds, ...)
+    all_res[[j]] <- prioritylasso(X = X,
+                                  Y = Y,
+                                  weights = weights,
+                                  family = family,
+                                  type.measure = type.measure,
+                                  blocks = blocks.list[[j]],
+                                  max.coef = max.coef.list[[j]],
+                                  block1.penalization = block1.penalization,
+                                  lambda.type = lambda.type,
+                                  standardize = standardize,
+                                  nfolds = nfolds,
+                                  foldid = foldid,
+                                  cvoffset = cvoffset,
+                                  cvoffsetnfolds = cvoffsetnfolds,
+                                  ...)
 
 
     if (type.measure != "auc"){

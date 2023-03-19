@@ -63,13 +63,17 @@ predict.prioritylasso <- function(object,
   }
   
   if (is.null(newdata)) {
-    newdata <- as.matrix(object$X)
+    if (!inherits(object$X, "matrix") || all(is.na(object$X))) {
+      stop("No data provided by either the prioritylasso object or newdata.")
+    } else {
+      newdata <- as.matrix(object$X)
+    }
   } else {
     assert(check_matrix(newdata), check_data_frame(newdata))
     newdata <- data.matrix(newdata)
   }
   
-  if (ncol(newdata) != ncol(object$X)) {
+  if (ncol(newdata) != object$dim.x[2]) {
     stop("The newdata does not have the same number of covariates as the traindata in the prioritylasso object.")
   }
   
@@ -102,11 +106,11 @@ predict.prioritylasso <- function(object,
   }
   
   # store one parameter from the model in a local variable for easier access
-  if (is.null(object$call$mcontrol$impute.offset.cases)) {
+  if (is.null(object$mcontrol$impute.offset.cases)) {
     # this is the default from missing.control
     param_offset_cases <- "complete.cases"
   } else {
-    param_offset_cases <- object$call$mcontrol$impute.offset.cases
+    param_offset_cases <- object$mcontrol$impute.offset.cases
   }
   
   ##############################################################################
@@ -149,7 +153,7 @@ predict.prioritylasso <- function(object,
   
   if (handle.missingtestdata == "impute.block") {
     # check that the prioritylasso object contains the imputation models
-    if (object$call$mcontrol$handle.missingdata != "impute.offset" ||
+    if (object$mcontrol$handle.missingdata != "impute.offset" ||
         is.null(object$imputation.models)) {
       stop("The needed imputation models are not provided by the prioritylasso object. Refit the training data with handle.missingdata = 'impute.offset")
     }
@@ -255,7 +259,7 @@ predict.prioritylasso <- function(object,
   
   # generate vector with intercepts of the different blocks
   # cox model does not have intercepts
-  if (object$call$family == "cox") {
+  if (object$family == "cox") {
     intercepts <- rep(0, times = length(object$blocks))
   } else {
     # unpenalized first block
@@ -356,10 +360,10 @@ predict.prioritylasso <- function(object,
       }
       
       # perform the imputations for the missing data
-      if (is.null(object$call$mcontrol$lambda.imputation)) {
+      if (is.null(object$mcontrol$lambda.imputation)) {
         use_lambda <- missing.control()[["lambda.imputation"]]
       } else {
-        use_lambda <- object$call$mcontrol$lambda.imputation
+        use_lambda <- object$mcontrol$lambda.imputation
       }
       for (i in 1:length(index_observation)) {
         # for every observation, check the different blocks
@@ -388,7 +392,7 @@ predict.prioritylasso <- function(object,
             # check if the current block should be used for prediction
             if (j %in% use.blocks || use.blocks[1] == "all") {
               # check if a model exists or if it is just a constant
-              if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "cv.glmnet") {
+              if (inherits(object$imputation.models[[j]][[missing_pattern_overview[i, j]]], "cv.glmnet")) {
                 imputed_values[index_observation[i]] <-
                   predict(object$imputation.models[[j]][[missing_pattern_overview[i, j]]],
                           newx = newdata[index_observation[i],
@@ -398,7 +402,7 @@ predict.prioritylasso <- function(object,
                   imputed_values[index_observation[i]]
                 
               } else {
-                if (class(object$imputation.models[[j]][[missing_pattern_overview[i, j]]]) == "numeric") {
+                if (inherits(object$imputation.models[[j]][[missing_pattern_overview[i, j]]], "numeric")) {
                   imputed_values[index_observation[i]] <-
                     object$imputation.models[[j]][[missing_pattern_overview[i, j]]] +
                     imputed_values[index_observation[i]]
@@ -456,7 +460,7 @@ predict.prioritylasso <- function(object,
   ############################ determine the coefficients
   ##############################################################################
   # family = cox
-  if (object$call$family == "cox") {
+  if (object$family == "cox") {
     
     coeff <- object$coefficients
     
@@ -494,16 +498,16 @@ predict.prioritylasso <- function(object,
   
   
   if(type == "response"){
-    if(object$call$family == "binomial"){
+    if(object$family == "binomial"){
       pred <- exp(pred) / (1 + exp(pred)) # fitted probabilities
     }
-    if(object$call$family == "cox"){
+    if(object$family == "cox"){
       pred <- exp(pred) # fitted relative risk (risk score (exp(lp)))
     }
   }
   
   # rescaling if gaussian outcome was normalised in training data
-  if (object$call$family == "gaussian" &&
+  if (object$family == "gaussian" &&
       !is.null(object$y.scale.param)) {
     pred <- pred * object$y.scale.param$sd + object$y.scale.param$mean
   }

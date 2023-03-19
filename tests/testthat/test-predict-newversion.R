@@ -278,6 +278,17 @@ test_that("errors are thrown due to wrong input for object", {
   expect_error(predict(x_data, newdata = x_data, type = "response"))
 })
 
+pl_no_data <- prioritylasso(X = x_data, Y = rnorm(50), family = "gaussian",
+                            type.measure = "mse",
+                            blocks = list(block1=1:75, block2=76:200, block3=201:500),
+                            block1.penalization = TRUE,
+                            lambda.type = "lambda.1se", standardize = TRUE,
+                            nfolds = 5, return.x = FALSE)
+
+test_that("an error is thrown when no x value is available", {
+  expect_error(predict(pl_no_data))
+})
+
 test_that("newdata is handled correctly", {
   # newdata can be a matrix or a data.frame
   expect_is(predict(pl1a, newdata = x_data, type = "response"), "matrix")

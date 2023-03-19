@@ -40,6 +40,7 @@
 #' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
 #' @param mcontrol controls how to deal with blockwise missing data. For details see below or \code{missing.control}
 #' @param scale.y determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}
+#' @param return.x logical, determines if the input data should be returned by \code{prioritylasso}. Default is \code{TRUE}
 #' @param ... other arguments that can be passed to the function \code{cv.glmnet}.
 #'
 #' @return object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block.
@@ -54,12 +55,15 @@
 #' \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object corresponding to \code{best.blocks}.}
 #' \item{\code{coefficients}}{vector of estimated coefficients. If \code{block1.penalization = FALSE} and \code{family = gaussian} or \code{binomial}, the first entry contains an intercept.}
 #' \item{\code{call}}{the function call.}
-#' \item{\code{X}}{the original data used for the calculation}
+#' \item{\code{X}}{the original data used for the calculation or \code{NA} if \code{return.x = FALSE}}
 #' \item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
 #' \item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
 #' \item{\code{blocks.used.for.imputation}}{if \code{handle.missingdata = "impute.offsets"}, it contains the blocks which were used for the imputation model for every block}
 #' \item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
 #' \item{\code{blocks}}{list with the description which variables belong to which block}
+#' \item{\code{mcontrol}}{the missing control settings used}
+#' \item{\code{family}}{the family of the fitted data}
+#' \item{\code{dim.x}}{the dimension of the used training data}
 #' }
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
@@ -124,6 +128,7 @@ prioritylasso <- function(X,
                           cvoffsetnfolds = 10,
                           mcontrol = missing.control(),
                           scale.y = FALSE,
+                          return.x = TRUE,
                           ...){
   
   
@@ -167,11 +172,6 @@ prioritylasso <- function(X,
     if (type.measure != "deviance")
       warning("type.measure is set to partial likelihood.")
     type.measure <- "deviance"
-  }
-  if (family == "binomial" & !is.element(type.measure, c("auc",
-                                                         "class"))) {
-    warning("type.measure is set to class.")
-    type.measure <- "class"
   }
   
   if(type.measure == "auc") {
@@ -538,7 +538,11 @@ prioritylasso <- function(X,
     imputation_models <- NULL
   }
   
-  
+  if (return.x) {
+    x_return_value <- X
+  } else {
+    x_return_value <- NA
+  }
   
   
   finallist <- list(lambda.ind = lambda.ind,
@@ -551,13 +555,16 @@ prioritylasso <- function(X,
                     block1unpen = block1erg,
                     coefficients = unlist(coeff),
                     call = match.call(),
-                    X = X,
+                    X = x_return_value,
                     missing.data = missing.data,
                     imputation.models = imputation_models,
                     blocks.used.for.imputation = blocks_used_for_imputation,
                     missingness.pattern = missingness_pattern,
                     y.scale.param = y.scale.param,
-                    blocks = blocks)
+                    blocks = blocks,
+                    mcontrol = mcontrol,
+                    family = family,
+                    dim.x = dim(X))
   
   class(finallist) <- c("prioritylasso", class(finallist))
   return(finallist)
