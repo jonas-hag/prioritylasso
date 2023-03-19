@@ -2,6 +2,7 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/jonas-hag/prioritylasso/workflows/R-CMD-check/badge.svg)](https://github.com/jonas-hag/prioritylasso/actions)
+[![R-CMD-check](https://github.com/jonas-hag/prioritylasso/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/jonas-hag/prioritylasso/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 prioritylasso is an `R` package that fits successive Lasso models for several
