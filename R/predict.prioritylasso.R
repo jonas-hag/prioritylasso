@@ -63,7 +63,7 @@ predict.prioritylasso <- function(object,
   }
   
   if (is.null(newdata)) {
-    if (!inherits(object$X, "matrix") || is.na(object$X)) {
+    if (!inherits(object$X, "matrix") || all(is.na(object$X))) {
       stop("No data provided by either the prioritylasso object or newdata.")
     } else {
       newdata <- as.matrix(object$X)
