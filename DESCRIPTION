@@ -1,19 +1,19 @@
 Package: prioritylasso
 Type: Package
 Title: Analyzing Multiple Omics Data with an Offset Approach
-Version: 0.2.2
+Version: 0.3.0
 Author: Simon Klau, Roman Hornung, Alina Bauer, Jonas Hagenberg
-Maintainer: Simon Klau <simonklau@ibe.med.uni-muenchen.de>
-Description: Fits successive Lasso models for several blocks of (omics) data with different priorities and takes the predicted values as an offset for the next block.
-Depends: R (>= 2.10.0)
+Maintainer: Roman Hornung <hornung@ibe.med.uni-muenchen.de>
+Description: Fits successive Lasso models for several blocks of (omics) data with different priorities and takes the predicted values as an offset for the next block. Also offers options to deal with blockwise missingness in multi-omics data.
+Depends: R (>= 3.5.0)
 License: GPL-2
 LazyData: TRUE
-Imports: survival, glmnet, utils, checkmate, rlang
+Imports: survival, glmnet, utils, checkmate
 RoxygenNote: 7.2.3
 Encoding: UTF-8
-Suggests: testthat, knitr, rmarkdown, pROC, bookdown
+Suggests: testthat, knitr, rmarkdown, pROC, bookdown, ipflasso, rlang
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2019-06-05 12:43:05 UTC; simonklau
+Packaged: 2023-03-28 13:50:42 UTC; roman
 Repository: CRAN
 Date/Publication: 2019-06-05 13:00:02 UTC

@@ -54,11 +54,11 @@ prioritylasso(
 
 \item{cvoffsetnfolds}{the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.}
 
-\item{mcontrol}{controls how to deal with blockwise missing data. For details see below or \code{missing.control}}
+\item{mcontrol}{controls how to deal with blockwise missing data. For details see below or \code{\link[prioritylasso]{missing.control}}.}
 
-\item{scale.y}{determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}}
+\item{scale.y}{determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}.}
 
-\item{return.x}{logical, determines if the input data should be returned by \code{prioritylasso}. Default is \code{TRUE}}
+\item{return.x}{logical, determines if the input data should be returned by \code{prioritylasso}. Default is \code{TRUE}.}
 
 \item{...}{other arguments that can be passed to the function \code{cv.glmnet}.}
 }
@@ -152,9 +152,9 @@ The function description and the first example are based on the R package \code{
 Klau, S., Jurinovic, V., Hornung, R., Herold, T., Boulesteix, A.-L. (2018). Priority-Lasso: a simple hierarchical approach to the prediction of clinical outcome using multi-omics data. BMC Bioinformatics 19, 322
 }
 \seealso{
-\code{\link[prioritylasso]{pl_data}}, \code{\link[prioritylasso]{cvm_prioritylasso}}, \code{\link[ipflasso]{cvr.ipflasso}}, \code{\link[ipflasso]{cvr2.ipflasso}}
+\code{\link[prioritylasso]{pl_data}}, \code{\link[prioritylasso]{cvm_prioritylasso}}, \code{\link[ipflasso]{cvr.ipflasso}}, \code{\link[ipflasso]{cvr2.ipflasso}}, \code{\link[prioritylasso]{missing.control}}
 }
 \author{
 Simon Klau, Roman Hornung, Alina Bauer \cr
-Maintainer: Simon Klau (\email{simonklau@ibe.med.uni-muenchen.de})
+Maintainer: Roman Hornung (\email{hornung@ibe.med.uni-muenchen.de})
 }

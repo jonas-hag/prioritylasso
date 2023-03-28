@@ -38,9 +38,9 @@
 #' @param foldid an optional vector of values between 1 and nfold identifying what fold each observation is in.
 #' @param cvoffset logical, whether CV should be used to estimate the offsets. Default is FALSE.
 #' @param cvoffsetnfolds the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.
-#' @param mcontrol controls how to deal with blockwise missing data. For details see below or \code{missing.control}
-#' @param scale.y determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}
-#' @param return.x logical, determines if the input data should be returned by \code{prioritylasso}. Default is \code{TRUE}
+#' @param mcontrol controls how to deal with blockwise missing data. For details see below or \code{\link[prioritylasso]{missing.control}}.
+#' @param scale.y determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}.
+#' @param return.x logical, determines if the input data should be returned by \code{prioritylasso}. Default is \code{TRUE}.
 #' @param ... other arguments that can be passed to the function \code{cv.glmnet}.
 #'
 #' @return object of class \code{prioritylasso} with the following elements. If these elements are lists, they contain the results for each penalized block.
@@ -68,8 +68,8 @@
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
 #' @author Simon Klau, Roman Hornung, Alina Bauer \cr
-#' Maintainer: Simon Klau (\email{simonklau@ibe.med.uni-muenchen.de})
-#' @seealso \code{\link[prioritylasso]{pl_data}}, \code{\link[prioritylasso]{cvm_prioritylasso}}, \code{\link[ipflasso]{cvr.ipflasso}}, \code{\link[ipflasso]{cvr2.ipflasso}}
+#' Maintainer: Roman Hornung (\email{hornung@ibe.med.uni-muenchen.de})
+#' @seealso \code{\link[prioritylasso]{pl_data}}, \code{\link[prioritylasso]{cvm_prioritylasso}}, \code{\link[ipflasso]{cvr.ipflasso}}, \code{\link[ipflasso]{cvr2.ipflasso}}, \code{\link[prioritylasso]{missing.control}}
 #' @references Klau, S., Jurinovic, V., Hornung, R., Herold, T., Boulesteix, A.-L. (2018). Priority-Lasso: a simple hierarchical approach to the prediction of clinical outcome using multi-omics data. BMC Bioinformatics 19, 322
 #' @export
 #' @import stats

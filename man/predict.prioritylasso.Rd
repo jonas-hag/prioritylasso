@@ -44,13 +44,13 @@ If \code{impute.offset.cases = "complete.cases"} was used, then every observatio
 If \code{impute.offset.cases = "available.cases"} was used, the missingness pattern in the test data has to be the same as in the train data. For observations with an unknown missingness pattern, \code{NA} is returned.
 }
 \examples{
-pl_bin <- prioritylasso(X = matrix(rnorm(50*500),50,500), Y = rbinom(50,1,0.5),
+pl_bin <- prioritylasso(X = matrix(rnorm(50*190),50,190), Y = rbinom(50,1,0.5),
                        family = "binomial", type.measure = "auc",
-                       blocks = list(block1=1:13,block2=14:200, block3=201:500),
+                       blocks = list(block1=1:13,block2=14:80, block3=81:190),
                        block1.penalization = TRUE, lambda.type = "lambda.min",
-                       standardize = FALSE, nfolds = 5)
+                       standardize = FALSE, nfolds = 3)
 
-newdata_bin <- matrix(rnorm(30*500),30,500)
+newdata_bin <- matrix(rnorm(10*190),10,190)
 
 predict(object = pl_bin, newdata = newdata_bin, type = "response")
 }

@@ -28,7 +28,7 @@
 #'
 #' @note The function description and the first example are based on the R package \code{ipflasso}.
 #' @author Simon Klau \cr
-#'         Maintainer: Simon Klau (\email{simonklau@ibe.med.uni-muenchen.de})
+#'         Maintainer: Roman Hornung (\email{hornung@ibe.med.uni-muenchen.de})
 #' @references Klau, S., Jurinovic, V., Hornung, R., Herold, T., Boulesteix, A.-L. (2018). Priority-Lasso: a simple hierarchical approach to the prediction of clinical outcome using multi-omics data. BMC Bioinformatics 19, 322
 #' @export
 #' @seealso \code{\link[prioritylasso]{pl_data}}, \code{\link[prioritylasso]{prioritylasso}}, \code{\link[ipflasso]{cvr2.ipflasso}}

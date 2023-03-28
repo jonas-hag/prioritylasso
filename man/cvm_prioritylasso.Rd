@@ -100,5 +100,5 @@ Klau, S., Jurinovic, V., Hornung, R., Herold, T., Boulesteix, A.-L. (2018). Prio
 }
 \author{
 Simon Klau \cr
-        Maintainer: Simon Klau (\email{simonklau@ibe.med.uni-muenchen.de})
+        Maintainer: Roman Hornung (\email{hornung@ibe.med.uni-muenchen.de})
 }

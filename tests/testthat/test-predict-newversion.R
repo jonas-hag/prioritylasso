@@ -1,3 +1,7 @@
+if (!requireNamespace("rlang", quietly = TRUE)) {
+  stop("The 'rlang' package is required for running this test. Please install it.")
+}
+
 # compare the current predict.prioritylasso version with the results from the
 # CRAN version
 # pl3 and pl3a are excluded because in the original prioritylasso function,
