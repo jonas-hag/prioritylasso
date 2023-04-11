@@ -45,8 +45,8 @@ results <- prioritylasso(
 Binary outcome data and Cox models are also possible. For a better overview,
 have a look at the [introductory vignette](vignettes/prioritylasso_vignette.Rmd).
 
-### Blockwise missing data
-A special type of missing data is blockwise missing data and occurs when the
+### Block-wise missing data
+A special type of missing data is block-wise missing data and occurs when the
 data contains "blocks", e.g. several variables that belong together like
 clinical measurements, mRNA sequencing data, SNP data etc. This means that for
 some observations not all blocks are observed. To deal with this type of
@@ -66,7 +66,7 @@ patterns.
 
 These options can be set in the function `missing.control`.
 
-If a prioritylasso model should be used to predict on data with blockwise missing
+If a prioritylasso model should be used to predict on data with block-wise missing
 data, the following options are available:
 
 - `set.zero`: ignores the missing data for the calculation of the prediction

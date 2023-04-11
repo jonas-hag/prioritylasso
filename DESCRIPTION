@@ -1,10 +1,19 @@
 Package: prioritylasso
 Type: Package
 Title: Analyzing Multiple Omics Data with an Offset Approach
-Version: 0.3.0
+Version: 0.3.2
 Author: Simon Klau, Roman Hornung, Alina Bauer, Jonas Hagenberg
 Maintainer: Roman Hornung <hornung@ibe.med.uni-muenchen.de>
-Description: Fits successive Lasso models for several blocks of (omics) data with different priorities and takes the predicted values as an offset for the next block. Also offers options to deal with blockwise missingness in multi-omics data.
+Description: Priority-LASSO (Klau et al., 2018) fits successive 
+  Lasso models for several blocks of (omics) data with different 
+  priorities and takes the predicted values as an offset for the 
+  next block. Also offers options to deal with block-wise missingness 
+  in multi-omics data.
+  Reference:
+  Klau, S., Jurinovic, V., Hornung, R., Herold, T., Boulesteix, A.-L. (2018) 
+  Priority-Lasso: a simple hierarchical approach to the prediction of clinical 
+  outcome using multi-omics data. 
+  BMC Bioinformatics 19:322, <doi:10.1186/s12859-018-2344-6>.
 Depends: R (>= 3.5.0)
 License: GPL-2
 LazyData: TRUE
